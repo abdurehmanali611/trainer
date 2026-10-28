@@ -1,0 +1,17 @@
+env: load .env.local
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME EXPO_PUBLIC_CLOUDINARY_PRESET_NAME
+Using src/app as the root directory for Expo Router.
+React Compiler enabled
+Starting Metro Bundler
+
+Android Bundling failed 162366ms node_modules\expo-router\entry.js (4424 modules)
+ ERROR  Error: failed to deserialize; expected an object-like struct named Specifier, found ()
+    at C:\Users\abdur\Documents\Projects\trainer\node_modules\lightningcss\node\index.js:56:14
+    at compile (C:\Users\abdur\Documents\Projects\trainer\node_modules\react-native-css\dist\commonjs\compiler\compiler.js:121:7)
+    at Object.transform (C:\Users\abdur\Documents\Projects\trainer\node_modules\react-native-css\dist\commonjs\metro\metro-transformer.js:23:43)
+
+SyntaxError: Error: failed to deserialize; expected an object-like struct named Specifier, found ()
+    at C:\Users\abdur\Documents\Projects\trainer\node_modules\lightningcss\node\index.js:56:14
+    at compile (C:\Users\abdur\Documents\Projects\trainer\node_modules\react-native-css\dist\commonjs\compiler\compiler.js:121:7)
+    at Object.transform (C:\Users\abdur\Documents\Projects\trainer\node_modules\react-native-css\dist\commonjs\metro\metro-transformer.js:23:43)
+exit=1

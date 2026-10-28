@@ -1,0 +1,66 @@
+env: load .env.local
+env: export EXPO_PUBLIC_API_URL EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME EXPO_PUBLIC_CLOUDINARY_PRESET_NAME
+Using src/app as the root directory for Expo Router.
+React Compiler enabled
+Starting Metro Bundler
+
+Server rendering is enabled. Learn more: https://docs.expo.dev/router/web/server-rendering/
+λ Bundled 213908ms node_modules\@expo\router-server\node\render.js (3757 modules)
+Web Bundled 216496ms node_modules\expo-router\entry.js (3750 modules)
+λ Bundled 102ms node_modules\@expo\router-server\node\render.js (1 module)
+
+› Assets (18):
+node_modules\expo-router\assets\arrow_down.017bc6ba3fc25503e5eb5e53826d48a8.png (9.5KB)
+node_modules\expo-router\assets\error.d1ea1496f9057eb392d5bbf3732a61b7.png (469B)
+node_modules\expo-router\assets\file.19eeb73b9593a38f8e9f418337fc7d10.png (138B)
+node_modules\expo-router\assets\forward.d8b800c443b8972542883e0b9de2bdc6.png (188B)
+node_modules\expo-router\assets\pkg.ab19f4cbc543357183a20571f68380a3.png (364B)
+node_modules\expo-router\assets\react-navigation\elements\back-icon-mask.0a328cd9c1afd0afe8e3b1ec5165b1b4.png (653B)
+node_modules\expo-router\assets\react-navigation\elements\back-icon.35ba0eaec5a4f5ed12ca16fabeae451d.png (207B)
+node_modules\expo-router\assets\react-navigation\elements\clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55.png (4 variations | 425B)
+node_modules\expo-router\assets\react-navigation\elements\close-icon.808e1b1b9b53114ec2838071a7e6daa7.png (4 variations | 235B)
+node_modules\expo-router\assets\react-navigation\elements\search-icon.286d67d3f74808a60a78d3ebf1a5fb57.png (928B)
+node_modules\expo-router\assets\sitemap.412dd9275b6b48ad28f5e3d81bb1f626.png (465B)
+node_modules\expo-router\assets\unmatched.20e71bdf79e3a97bf55fd9e164041578.png (4.8KB)
+
+› web bundles (33):
+_expo/server/render.js (5.5MB)
+_expo/server/render.js.map (6.2MB)
+_expo/static/css/global-2811265b25e62999f830cd55edf1754b.css (62KB)
+_expo/static/js/web/__common-d6a400c3ca4c71d5e11b47a25a1b5a75.js (3.9MB)
+_expo/static/js/web/__expo-metro-runtime-97703ae02682710149335928b974f18d.js (10KB)
+_expo/static/js/web/_layout-208756ab90505542441ee8ce2ec84d02.js (2.4KB)
+_expo/static/js/web/_layout-2d6096620166d56b7187558b76df046c.js (11KB)
+_expo/static/js/web/_layout-e4ad6e08a6e93ac13cf3f81e23da9820.js (686B)
+_expo/static/js/web/_layout-ed6a40e0f261e6cda183f6872827db91.js (384B)
+_expo/static/js/web/_layout-ff9af2c966bab08d4bae32151f79b0e3.js (1.1KB)
+_expo/static/js/web/[id]-06398fdc4296e7247e54e6c8e1feb383.js (19KB)
+_expo/static/js/web/[id]-0c0da322994f77f11fa0ba73d07a9651.js (15KB)
+_expo/static/js/web/[id]-4bcaf4268705f0342f2c02df79688853.js (60KB)
+_expo/static/js/web/[id]-c4b01078b8b8fe1b4873fca180dfd4b4.js (14KB)
+_expo/static/js/web/billing-277253676526afab9fe9692389aae360.js (16KB)
+_expo/static/js/web/broadcast-514a3f01639567aef7bd50901b363c47.js (15KB)
+_expo/static/js/web/clients-2daddb580c41ce6faedb0ed7eaccbaa1.js (10KB)
+_expo/static/js/web/diary-review-9ddc72223afde4a6dbe048757d7a5827.js (14KB)
+_expo/static/js/web/entry-a757316531d5b686c930d2d6527cbde2.js (1.1MB)
+_expo/static/js/web/forgot-password-14ecbd4026639021f6383f5349af6203.js (1.9KB)
+_expo/static/js/web/index-8fc23a136e4da1de8f345d7bcfe619b8.js (4KB)
+_expo/static/js/web/index-c107a868fde29140ba92035b3c0eabb6.js (13KB)
+_expo/static/js/web/index-c59a19909779ea44d269d632e90b6447.js (2.9KB)
+_expo/static/js/web/login-890579729d324f58193d551d0c92f56f.js (2.4KB)
+_expo/static/js/web/notifications-1c11538c02867e47479e060e6e34097d.js (3.3KB)
+_expo/static/js/web/payment-instructions-4d28c6079cb7a4cdfe29fdf858f6d25c.js (4KB)
+_expo/static/js/web/plans-6b7bbc818daf518a7b2089e220b7c07b.js (6.2KB)
+_expo/static/js/web/platform-lock-4b297c37918d39619dd31739e7ad1791.js (5.5KB)
+_expo/static/js/web/profile-d2cab94f178dc65c6d4bb7a512fb1695.js (4KB)
+_expo/static/js/web/register-b85b0e36aa0483211128d7a47790f9b4.js (6.4KB)
+_expo/static/js/web/reset-9f109c1c9abde74c68d01d49144ea949.js (1.6KB)
+_expo/static/js/web/schedule-ee00fc3a1713cd2c41a2c6ffa2a4dfde.js (16KB)
+_expo/static/js/web/support-chat-00dfa82022fe00505bd0efc529d7b323.js (5.6KB)
+
+› Files (2):
+_expo/routes.json (11KB)
+favicon.ico (15KB)
+
+Exported: ./.export-web
+exit=0
