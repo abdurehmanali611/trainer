@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ChevronRightIcon, PlusIcon } from 'lucide-react-native';
+import { ChevronRightIcon, NotebookPenIcon, PlusIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogSection,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -276,22 +277,19 @@ export default function PlansScreen() {
             <DialogTitle>New {createTitle} plan</DialogTitle>
             <DialogDescription>Give the plan a name. You can edit it later.</DialogDescription>
           </DialogHeader>
-          <Input
-            placeholder="Plan name"
-            value={newName}
-            onChangeText={setNewName}
-            autoCapitalize="words"
-          />
-          <View className="gap-1.5">
-            <Text variant="muted" className="text-xs font-medium">
-              Description (optional)
-            </Text>
+          <DialogSection icon={NotebookPenIcon} label="Plan details" className="gap-3">
+            <Input
+              placeholder="Plan name"
+              value={newName}
+              onChangeText={setNewName}
+              autoCapitalize="words"
+            />
             <Textarea
-              placeholder="What is this plan about? Goals, focus, notes…"
+              placeholder="What is this plan about? Goals, focus, notes… (optional)"
               value={newDesc}
               onChangeText={setNewDesc}
             />
-          </View>
+          </DialogSection>
           <DialogFooter>
             <Button variant="outline" onPress={() => setCreateOpen(false)}>
               <Text>Cancel</Text>

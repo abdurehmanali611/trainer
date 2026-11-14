@@ -1,6 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowDownIcon,
+  CalendarDaysIcon,
+  DumbbellIcon,
   ArrowUpIcon,
   PencilIcon,
   PlusIcon,
@@ -13,7 +15,9 @@ import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogSection,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -521,12 +525,14 @@ export default function WorkoutPlanScreen() {
             <DialogTitle>Add day</DialogTitle>
             <DialogDescription>{'Name the training day, e.g. "Push" or "Day 1".'}</DialogDescription>
           </DialogHeader>
-          <Input
-            placeholder="Day name"
-            value={dayName}
-            onChangeText={setDayName}
-            autoCapitalize="words"
-          />
+          <DialogSection icon={CalendarDaysIcon} label="Training day">
+            <Input
+              placeholder="Day name"
+              value={dayName}
+              onChangeText={setDayName}
+              autoCapitalize="words"
+            />
+          </DialogSection>
           <DialogFooter>
             <Button variant="outline" onPress={() => setAddDayOpen(false)}>
               <Text>Cancel</Text>
@@ -569,7 +575,7 @@ export default function WorkoutPlanScreen() {
               </Pressable>
             ))}
           </ScrollView>
-          <ScrollView className="max-h-72" keyboardShouldPersistTaps="handled">
+          <DialogBody>
             {pickerLoading ? (
               <View className="items-center py-6">
                 <ActivityIndicator />
@@ -598,7 +604,7 @@ export default function WorkoutPlanScreen() {
                 ))}
               </View>
             )}
-          </ScrollView>
+          </DialogBody>
         </DialogContent>
       </Dialog>
 
@@ -613,7 +619,8 @@ export default function WorkoutPlanScreen() {
             <DialogDescription>{config?.detail.name}</DialogDescription>
           </DialogHeader>
           {config ? (
-            <View className="gap-4">
+            <DialogBody contentContainerClassName="gap-4">
+              <DialogSection icon={DumbbellIcon} label="Training" className="gap-4">
               <View className="flex-row gap-3">
                 <Field
                   label="Sets"
@@ -642,7 +649,8 @@ export default function WorkoutPlanScreen() {
                   placeholder="0"
                 />
               </View>
-            </View>
+              </DialogSection>
+            </DialogBody>
           ) : null}
           <DialogFooter>
             <Button variant="outline" onPress={() => setConfig(null)}>

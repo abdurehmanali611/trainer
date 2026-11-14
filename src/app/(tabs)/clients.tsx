@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { ChevronRightIcon, PlusIcon } from 'lucide-react-native';
+import { ChevronRightIcon, HeartPulseIcon, PlusIcon, Trash2Icon, UserIcon, WalletIcon } from 'lucide-react-native';
 import * as React from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/app-header';
@@ -11,7 +11,9 @@ import { PhoneNumberInput } from '@/components/phone-input';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogSection,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -26,7 +28,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { Text } from '@/components/ui/text';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api';
-import { initials, labelize, normalizeAccessState } from '@/lib/format';
+import { initials, joinEmergencyContact, labelize, normalizeAccessState } from '@/lib/format';
 import type { Client, Paginated } from '@/lib/types';
 
 const FILTERS = [
@@ -35,6 +37,7 @@ const FILTERS = [
   { key: 'trial', label: 'Trial' },
   { key: 'illustrative', label: 'Illustrative' },
   { key: 'blocked', label: 'Blocked' },
+  { key: 'inactive', label: 'Inactive' },
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]['key'];
@@ -66,7 +69,7 @@ function Field({
   );
 }
 
-function ClientRow({ client, onPress }: { client: Client; onPress: () => void }) {
+function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () => void; onDelete: (client: Client) => void }) {
   const state = normalizeAccessState(client.access_state).state;
   // A freshly created client has no subscription period yet — that is an
   // onboarding step, not a blocked account, so it gets a softer badge.
@@ -84,9 +87,13 @@ function ClientRow({ client, onPress }: { client: Client; onPress: () => void })
       </Avatar>
       <View className="flex-1 gap-0.5">
         <View className="flex-row items-center gap-2">
-          <Text className="font-medium" numberOfLines={1}>
+          <Text
+            className={client.is_active ? 'font-medium' : 'font-medium opacity-60'}
+            numberOfLines={1}>
             {client.name}
           </Text>
+          {/* Feature 18: deactivated clients stay listed, marked inactive. */}
+          {!client.is_active ? <Badge label="Inactive" tone="default" /> : null}
           {blocked ? <Badge label="Blocked" tone="danger" /> : null}
           {needsPeriod ? <Badge label="No period yet" tone="warning" /> : null}
         </View>
@@ -95,6 +102,14 @@ function ClientRow({ client, onPress }: { client: Client; onPress: () => void })
         </Text>
       </View>
       <Badge label={labelize(client.mode)} tone={toneForMode[client.mode]} />
+      {/* Feature 19: the trash icon removes the client completely —
+          sessions, periods, payments, chat, diary, plans, everything. */}
+      <Pressable
+        hitSlop={10}
+        onPress={() => onDelete(client)}
+        className="rounded-lg p-1.5 active:bg-destructive/10">
+        <Icon as={Trash2Icon} size={16} className="text-destructive" />
+      </Pressable>
       <Icon as={ChevronRightIcon} className="text-muted-foreground" size={18} />
     </Pressable>
   );
@@ -114,7 +129,8 @@ function CreateClientDialog({
   const [email, setEmail] = React.useState('');
   const [goals, setGoals] = React.useState('');
   const [medicalHistory, setMedicalHistory] = React.useState('');
-  const [emergencyContact, setEmergencyContact] = React.useState('');
+  const [emergencyName, setEmergencyName] = React.useState('');
+  const [emergencyPhone, setEmergencyPhone] = React.useState('');
   const [saving, setSaving] = React.useState(false);
   // Illustrative clients are not payable, so they get no payment instruction.
   const [illustration, setIllustration] = React.useState(false);
@@ -138,7 +154,8 @@ function CreateClientDialog({
     setEmail('');
     setGoals('');
     setMedicalHistory('');
-    setEmergencyContact('');
+    setEmergencyName('');
+    setEmergencyPhone('');
     setIllustration(false);
     setInstructionId('');
   }
@@ -167,7 +184,7 @@ function CreateClientDialog({
             .map((g) => g.trim())
             .filter(Boolean),
           medical_history: medicalHistory.trim(),
-          emergency_contact: emergencyContact.trim(),
+          emergency_contact: joinEmergencyContact(emergencyName, emergencyPhone),
         },
       });
       if (illustration) {
@@ -198,35 +215,37 @@ function CreateClientDialog({
           <DialogTitle>Add client</DialogTitle>
           <DialogDescription>Create a client account. Phone and email are required.</DialogDescription>
         </DialogHeader>
-        <ScrollView
-          style={{ maxHeight: 480 }}
-          contentContainerStyle={{ gap: 14 }}
-          showsVerticalScrollIndicator={false}>
-          <View className="gap-3 sm:flex-row">
-            <Field label="Full name" required>
-              <Input placeholder="Abebe Bekele" value={name} onChangeText={setName} />
-            </Field>
-            <Field label="Phone" required>
-              <PhoneNumberInput value={phone} onChange={setPhone} />
-            </Field>
-          </View>
-          <View className="gap-3 sm:flex-row">
-            <Field label="Email" required>
-              <Input
-                placeholder="client@example.com"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={email}
-                onChangeText={setEmail}
-              />
-            </Field>
-          </View>
+        <DialogBody contentContainerClassName="gap-4">
+          <DialogSection icon={UserIcon} label="Client details" className="gap-3">
+            <View className="gap-3 sm:flex-row">
+              <Field label="Full name" required>
+                <Input placeholder="Abebe Bekele" value={name} onChangeText={setName} />
+              </Field>
+              <Field label="Phone" required>
+                <PhoneNumberInput value={phone} onChange={setPhone} />
+              </Field>
+            </View>
+            <View className="gap-3 sm:flex-row">
+              <Field label="Email" required>
+                <Input
+                  placeholder="client@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={email}
+                  onChangeText={setEmail}
+                />
+              </Field>
+            </View>
+          </DialogSection>
 
-          <View className="gap-3 rounded-xl border border-border bg-card p-3.5">
+          <DialogSection
+            icon={WalletIcon}
+            label="Illustration"
+            className={illustration ? 'border-primary/40 bg-primary/5' : undefined}>
             <View className="flex-row items-center justify-between gap-3">
               <View className="flex-1 gap-0.5">
-                <Text className="text-sm font-medium">Illustration</Text>
+                <Text className="text-sm font-medium">Not payable</Text>
                 <Text variant="muted" className="text-xs">
                   On = this client is not payable (no payment instruction is shown to them).
                 </Text>
@@ -253,30 +272,37 @@ function CreateClientDialog({
                 />
               </View>
             ) : null}
-          </View>
+          </DialogSection>
 
-          <Field label="Goals" hint="Comma separated, e.g. weight loss, strength.">
-            <Input
-              placeholder="Weight loss, strength"
-              value={goals}
-              onChangeText={setGoals}
-            />
-          </Field>
-          <Field label="Medical history" hint="Optional.">
-            <Textarea
-              placeholder="Injuries, conditions, medications…"
-              value={medicalHistory}
-              onChangeText={setMedicalHistory}
-            />
-          </Field>
-          <Field label="Emergency contact" hint="Optional — name and phone number.">
-            <Input
-              placeholder="e.g. Sara Bekele +251 911 234 567"
-              value={emergencyContact}
-              onChangeText={setEmergencyContact}
-            />
-          </Field>
-        </ScrollView>
+          <DialogSection icon={HeartPulseIcon} label="Health & safety" className="gap-3">
+            <Field label="Goals" hint="Comma separated, e.g. weight loss, strength.">
+              <Input
+                placeholder="Weight loss, strength"
+                value={goals}
+                onChangeText={setGoals}
+              />
+            </Field>
+            <Field label="Medical history" hint="Optional.">
+              <Textarea
+                placeholder="Injuries, conditions, medications…"
+                value={medicalHistory}
+                onChangeText={setMedicalHistory}
+              />
+            </Field>
+            <View className="gap-3 sm:flex-row">
+              <Field label="Emergency name" hint="Optional.">
+                <Input
+                  placeholder="e.g. Sara Bekele"
+                  value={emergencyName}
+                  onChangeText={setEmergencyName}
+                />
+              </Field>
+              <Field label="Emergency phone" hint="Optional.">
+                <PhoneNumberInput value={emergencyPhone} onChange={setEmergencyPhone} />
+              </Field>
+            </View>
+          </DialogSection>
+        </DialogBody>
         <DialogFooter>
           <Button variant="outline" disabled={saving} onPress={() => onOpenChange(false)}>
             <Text>Cancel</Text>
@@ -314,6 +340,9 @@ export default function ClientsScreen() {
 
   const modeParam = filter === 'paid' || filter === 'trial' || filter === 'illustrative' ? filter : undefined;
   const accessParam = filter === 'blocked' ? 'blocked' : undefined;
+  // Feature 18: the list includes deactivated clients (marked inactive);
+  // the filter narrows to inactive-only. Pickers elsewhere use ?status=active.
+  const statusParam = filter === 'inactive' ? 'inactive' : 'all';
 
   const load = React.useCallback(
     async (kind: 'initial' | 'refresh' | 'more') => {
@@ -329,6 +358,7 @@ export default function ClientsScreen() {
             search: debouncedSearch || undefined,
             mode: modeParam,
             access: accessParam,
+            status: statusParam,
           },
         });
         if (seq !== seqRef.current) return;
@@ -348,7 +378,7 @@ export default function ClientsScreen() {
         }
       }
     },
-    [debouncedSearch, modeParam, accessParam]
+    [debouncedSearch, modeParam, accessParam, statusParam]
   );
 
   React.useEffect(() => {
@@ -394,7 +424,38 @@ export default function ClientsScreen() {
         data={items}
         keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
-          <ClientRow client={item} onPress={() => router.push(`/client/${item.id}`)} />
+          <ClientRow
+            client={item}
+            onPress={() => router.push(`/client/${item.id}`)}
+            onDelete={(client) => {
+              // Feature 19: permanent delete — confirm the permanence first.
+              Alert.alert(
+                'Delete client permanently?',
+                `${client.name} will be removed completely — all in all: sessions, ` +
+                  'subscription periods, payments, chat, diary and plans are erased. ' +
+                  'They can only come back as a brand-new client with a new OTP.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete forever',
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        await api(`clients/${client.id}/`, { method: 'DELETE' });
+                        setItems((prev) => prev.filter((c) => c.id !== client.id));
+                        setCount((c) => (c != null ? Math.max(0, c - 1) : c));
+                      } catch (e) {
+                        Alert.alert(
+                          'Delete failed',
+                          e instanceof Error ? e.message : 'Something went wrong.'
+                        );
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+          />
         )}
         ListHeaderComponent={header}
         ListEmptyComponent={

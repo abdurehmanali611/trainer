@@ -2,7 +2,9 @@ import { useRouter } from 'expo-router';
 import {
   BellIcon,
   ChevronLeftIcon,
+  CreditCardIcon,
   LifeBuoyIcon,
+  ListChecksIcon,
   LogOutIcon,
   MessageCircleIcon,
   NotebookPenIcon,
@@ -288,6 +290,14 @@ export function AppHeader() {
             <DropdownMenuItem onPress={() => router.push('/more/diary-review')}>
               <Icon as={NotebookPenIcon} size={16} />
               <Text>Diary review</Text>
+            </DropdownMenuItem>
+            <DropdownMenuItem onPress={() => router.push('/(tabs)/exercises')}>
+              <Icon as={ListChecksIcon} size={16} />
+              <Text>Exercises</Text>
+            </DropdownMenuItem>
+            <DropdownMenuItem onPress={() => router.push('/(tabs)/billing')}>
+              <Icon as={CreditCardIcon} size={16} />
+              <Text>Billing</Text>
             </DropdownMenuItem>
             <DropdownMenuItem onPress={() => router.push('/support-chat')}>
               <Icon as={LifeBuoyIcon} size={16} />

@@ -14,6 +14,7 @@ import { Combobox } from '@/components/ui/combobox';
 import { DateField } from '@/components/ui/calendar';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -381,7 +382,7 @@ export function PaymentInstructionsSection() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[86vh] overflow-y-auto sm:max-w-xl">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{draft.id ? 'Edit instruction' : 'New payment instruction'}</DialogTitle>
             <DialogDescription>
@@ -389,7 +390,7 @@ export function PaymentInstructionsSection() {
             </DialogDescription>
           </DialogHeader>
 
-          <View className="gap-4">
+          <DialogBody contentContainerClassName="gap-4">
             <View className="gap-2 rounded-2xl border border-border bg-card p-3.5">
               <FieldLabel>Details</FieldLabel>
               <Input
@@ -560,7 +561,7 @@ export function PaymentInstructionsSection() {
                 Leave empty if the amount depends on the package the client picks.
               </Text>
             </View>
-          </View>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onPress={() => setOpen(false)}>

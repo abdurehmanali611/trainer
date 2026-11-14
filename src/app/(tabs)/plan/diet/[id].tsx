@@ -1,11 +1,13 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
+  AppleIcon,
   ArrowDownIcon,
   ArrowUpIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
   UserPlusIcon,
+  UtensilsIcon,
 } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
@@ -14,7 +16,9 @@ import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogSection,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -556,6 +560,38 @@ export default function DietPlanScreen() {
               ))
             )}
           </View>
+
+          {/* Feature 26: the client's diet self-reports — read-only. The
+              client approves or declines with a reason; the trainer sees the
+              status + reason with NO action buttons anywhere. */}
+          {plan.adherence_reports && plan.adherence_reports.length > 0 ? (
+            <View className="gap-2">
+              <Text variant="h4">Client adherence</Text>
+              <Text variant="muted" className="text-xs">
+                What the client reported — read-only.
+              </Text>
+              {plan.adherence_reports.map((report) => (
+                <View
+                  key={report.id}
+                  className="gap-1.5 rounded-xl border border-border bg-card p-3">
+                  <View className="flex-row items-center justify-between gap-2">
+                    {report.client_name ? (
+                      <Text className="text-sm font-medium" numberOfLines={1}>
+                        {report.client_name}
+                      </Text>
+                    ) : null}
+                    <Badge
+                      label={report.status === 'approved' ? 'Approved' : 'Declined'}
+                      tone={report.status === 'approved' ? 'success' : 'danger'}
+                    />
+                  </View>
+                  <Text variant="muted" className="text-xs">
+                    {report.reason}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
       </Screen>
 
@@ -565,7 +601,7 @@ export default function DietPlanScreen() {
             <DialogTitle>Add meal</DialogTitle>
             <DialogDescription>Give the meal a name and an optional time.</DialogDescription>
           </DialogHeader>
-          <View className="gap-3">
+          <DialogSection icon={UtensilsIcon} label="Meal" className="gap-3">
             <Input
               placeholder="Meal name"
               value={mealDraft.name}
@@ -578,7 +614,7 @@ export default function DietPlanScreen() {
               onChangeText={(v) => setMealDraft((d) => ({ ...d, time: v }))}
               autoCapitalize="none"
             />
-          </View>
+          </DialogSection>
           <DialogFooter>
             <Button variant="outline" onPress={() => setAddMealOpen(false)}>
               <Text>Cancel</Text>
@@ -601,7 +637,8 @@ export default function DietPlanScreen() {
             <DialogDescription>Track the nutrition for this food item.</DialogDescription>
           </DialogHeader>
           {itemConfig ? (
-            <View className="gap-4">
+            <DialogBody contentContainerClassName="gap-4">
+              <DialogSection icon={AppleIcon} label="Nutrition" className="gap-4">
               <Input
                 placeholder="Name"
                 value={itemConfig.name}
@@ -635,7 +672,8 @@ export default function DietPlanScreen() {
                   keyboardType="number-pad"
                 />
               </View>
-            </View>
+              </DialogSection>
+            </DialogBody>
           ) : null}
           <DialogFooter>
             <Button variant="outline" onPress={() => setItemConfig(null)}>

@@ -1,6 +1,12 @@
-import { PlusIcon, Trash2Icon } from 'lucide-react-native';
+import {
+  DumbbellIcon,
+  PaperclipIcon,
+  PlusIcon,
+  TimerIcon,
+  Trash2Icon,
+} from 'lucide-react-native';
 import * as React from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, View } from 'react-native';
 
 import {
   Badge,
@@ -14,7 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
+  DialogSection,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -444,7 +452,7 @@ export default function ExercisesScreen() {
           if (next) setOpen(true);
           else void closeDialog();
         }}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[42rem] max-w-[calc(100vw-2rem)]">
           <DialogHeader>
             <DialogTitle>{editingId == null ? 'New exercise' : 'Edit exercise'}</DialogTitle>
             <DialogDescription>
@@ -454,11 +462,8 @@ export default function ExercisesScreen() {
             </DialogDescription>
           </DialogHeader>
 
-          <ScrollView
-            style={{ maxHeight: 420 }}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12 }}>
+          <DialogBody contentContainerClassName="gap-4">
+            <DialogSection icon={DumbbellIcon} label="Basics" className="gap-3">
             <Labeled label="Name">
               <Input
                 placeholder="e.g. Barbell Bench Press"
@@ -501,14 +506,9 @@ export default function ExercisesScreen() {
               />
             </Labeled>
 
-            <Labeled label="Description (optional)">
-              <Textarea
-                placeholder="Form cues, tempo, how to perform it…"
-                value={draft.description}
-                onChangeText={(v) => patch('description', v)}
-              />
-            </Labeled>
+            </DialogSection>
 
+            <DialogSection icon={TimerIcon} label="Volume" className="gap-3">
             <View className="flex-row gap-3">
               <View className="flex-1">
                 <Labeled label="Sets">
@@ -553,6 +553,16 @@ export default function ExercisesScreen() {
                 </Labeled>
               </View>
             </View>
+            </DialogSection>
+
+            <DialogSection icon={PaperclipIcon} label="Extras" className="gap-3">
+            <Labeled label="Description (optional)">
+              <Textarea
+                placeholder="Form cues, tempo, how to perform it…"
+                value={draft.description}
+                onChangeText={(v) => patch('description', v)}
+              />
+            </Labeled>
 
             <Labeled label="Equipment (optional)">
               <Input
@@ -573,7 +583,8 @@ export default function ExercisesScreen() {
                 keyboardType="url"
               />
             </Labeled>
-          </ScrollView>
+            </DialogSection>
+          </DialogBody>
 
           {editingId != null && saveLabel ? (
             <Text

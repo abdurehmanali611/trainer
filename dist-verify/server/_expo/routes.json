@@ -1,0 +1,404 @@
+{
+  "apiRoutes": [],
+  "htmlRoutes": [
+    {
+      "file": "./(tabs)/support-chat/index.tsx",
+      "page": "/(tabs)/support-chat/index",
+      "namedRegex": "^(?:/\\(tabs\\))?/support\\-chat(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-deb17655b115c2efc99188d4e1d16e4b.js",
+          "/_expo/static/js/web/index-18992d9b3418a78e57f87e013d3d7517.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/more/index.tsx",
+      "page": "/(tabs)/more/index",
+      "namedRegex": "^(?:/\\(tabs\\))?/more(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-481bf9a05fdf5372975e0cbf84b51cc4.js",
+          "/_expo/static/js/web/index-ec76679648c7e3ac4ae1ec5aa8817123.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/chat/index.tsx",
+      "page": "/(tabs)/chat/index",
+      "namedRegex": "^(?:/\\(tabs\\))?/chat(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-ab2640a5b61a63ffa4154b4914610c40.js",
+          "/_expo/static/js/web/index-88c0e5c5d0549d88e5f690a64a22dcf5.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/index.tsx",
+      "page": "/(tabs)/index",
+      "namedRegex": "^(?:/\\(tabs\\))?(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/index-1f100e12947315b1a7f8b6d0da34a753.js"
+        ]
+      }
+    },
+    {
+      "file": "./auth/reset.tsx",
+      "page": "/auth/reset",
+      "namedRegex": "^/auth/reset(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-f57604687f1d9072ed95f4c23b933b41.js",
+          "/_expo/static/js/web/reset-7ba8d9ca656c7d632445c8ca13ad8382.js"
+        ]
+      }
+    },
+    {
+      "file": "./auth/login.tsx",
+      "page": "/auth/login",
+      "namedRegex": "^/auth/login(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-f57604687f1d9072ed95f4c23b933b41.js",
+          "/_expo/static/js/web/login-632c3411e3814174b2d4320e73e40456.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/plans.tsx",
+      "page": "/(tabs)/plans",
+      "namedRegex": "^(?:/\\(tabs\\))?/plans(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/plans-5f0ee71352e73ba32b4e72a40bf5a181.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/remark.tsx",
+      "page": "/(tabs)/remark",
+      "namedRegex": "^(?:/\\(tabs\\))?/remark(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/remark-00085e4e064bc8a25bf8849c6119bff6.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/more/profile.tsx",
+      "page": "/(tabs)/more/profile",
+      "namedRegex": "^(?:/\\(tabs\\))?/more/profile(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-481bf9a05fdf5372975e0cbf84b51cc4.js",
+          "/_expo/static/js/web/profile-7073fd3d7cf1c59cbd122e2e28c716af.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/clients.tsx",
+      "page": "/(tabs)/clients",
+      "namedRegex": "^(?:/\\(tabs\\))?/clients(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/clients-ca9c465c30555b97f59ef0ef49d37584.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/billing.tsx",
+      "page": "/(tabs)/billing",
+      "namedRegex": "^(?:/\\(tabs\\))?/billing(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/billing-7d84ed657fdc6cbb7cc66209a3da6717.js"
+        ]
+      }
+    },
+    {
+      "file": "./auth/register.tsx",
+      "page": "/auth/register",
+      "namedRegex": "^/auth/register(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-f57604687f1d9072ed95f4c23b933b41.js",
+          "/_expo/static/js/web/register-c6623c0305a01c72bdde1fa41da144ed.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/schedule.tsx",
+      "page": "/(tabs)/schedule",
+      "namedRegex": "^(?:/\\(tabs\\))?/schedule(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/schedule-03a03e734a6c8dfdb6e1e15d98a43577.js"
+        ]
+      }
+    },
+    {
+      "file": "expo-router/build/views/Sitemap.js",
+      "page": "/_sitemap",
+      "namedRegex": "^/_sitemap(?:/)?$",
+      "routeKeys": {},
+      "generated": true,
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/chat/broadcast.tsx",
+      "page": "/(tabs)/chat/broadcast",
+      "namedRegex": "^(?:/\\(tabs\\))?/chat/broadcast(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-ab2640a5b61a63ffa4154b4914610c40.js",
+          "/_expo/static/js/web/broadcast-6069dedb39d55c3886c3ca7bbc1f27ff.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/exercises.tsx",
+      "page": "/(tabs)/exercises",
+      "namedRegex": "^(?:/\\(tabs\\))?/exercises(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/exercises-d51c415479d64b0d73897660955c5cae.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/more/diary-review.tsx",
+      "page": "/(tabs)/more/diary-review",
+      "namedRegex": "^(?:/\\(tabs\\))?/more/diary\\-review(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-481bf9a05fdf5372975e0cbf84b51cc4.js",
+          "/_expo/static/js/web/diary-review-518aef83e607e9afee21d3bdd4f9836a.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/more/notifications.tsx",
+      "page": "/(tabs)/more/notifications",
+      "namedRegex": "^(?:/\\(tabs\\))?/more/notifications(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-481bf9a05fdf5372975e0cbf84b51cc4.js",
+          "/_expo/static/js/web/notifications-eb008a5ce574cd2f1e355125d7dc526e.js"
+        ]
+      }
+    },
+    {
+      "file": "./platform-lock.tsx",
+      "page": "/platform-lock",
+      "namedRegex": "^/platform\\-lock(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/platform-lock-1772a7a3218bf5e8d914a80ceec6720d.js"
+        ]
+      }
+    },
+    {
+      "file": "./auth/forgot-password.tsx",
+      "page": "/auth/forgot-password",
+      "namedRegex": "^/auth/forgot\\-password(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-f57604687f1d9072ed95f4c23b933b41.js",
+          "/_expo/static/js/web/forgot-password-ac5224698726ebb657d8182f5bed1f48.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/more/payment-instructions.tsx",
+      "page": "/(tabs)/more/payment-instructions",
+      "namedRegex": "^(?:/\\(tabs\\))?/more/payment\\-instructions(?:/)?$",
+      "routeKeys": {},
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-481bf9a05fdf5372975e0cbf84b51cc4.js",
+          "/_expo/static/js/web/payment-instructions-b28c7ae759b3aa06cebe73a1c9a0081e.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/plan/workout/[id].tsx",
+      "page": "/(tabs)/plan/workout/[id]",
+      "namedRegex": "^(?:/\\(tabs\\))?/plan/workout/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      },
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-dfe5441aba3052abebadc6a8b7df577a.js",
+          "/_expo/static/js/web/[id]-fd5524590cfc767c9340f748dbb832a0.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/plan/diet/[id].tsx",
+      "page": "/(tabs)/plan/diet/[id]",
+      "namedRegex": "^(?:/\\(tabs\\))?/plan/diet/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      },
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-dfe5441aba3052abebadc6a8b7df577a.js",
+          "/_expo/static/js/web/[id]-92ceebaadf6f0aee148fc2d3e7e94a92.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/client/[id].tsx",
+      "page": "/(tabs)/client/[id]",
+      "namedRegex": "^(?:/\\(tabs\\))?/client/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      },
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-022b6ec7029000e3e892090d1a79d116.js",
+          "/_expo/static/js/web/[id]-8c9690459389e96fadbe508f54057e5e.js"
+        ]
+      }
+    },
+    {
+      "file": "./(tabs)/chat/[id].tsx",
+      "page": "/(tabs)/chat/[id]",
+      "namedRegex": "^(?:/\\(tabs\\))?/chat/(?<id>[^/]+?)(?:/)?$",
+      "routeKeys": {
+        "id": "id"
+      },
+      "assets": {
+        "css": [],
+        "js": [
+          "/_expo/static/js/web/_layout-7709a9b984c5040a3692272ba82cf1f3.js",
+          "/_expo/static/js/web/_layout-a30734da58b06b18b4f0209f591ffb81.js",
+          "/_expo/static/js/web/_layout-ab2640a5b61a63ffa4154b4914610c40.js",
+          "/_expo/static/js/web/[id]-3839107f1c9a07f5842f9d63cded67e4.js"
+        ]
+      }
+    }
+  ],
+  "notFoundRoutes": [
+    {
+      "file": "expo-router/build/views/Unmatched.js",
+      "page": "/+not-found",
+      "namedRegex": "^(?:/(?<notfound>.+?))?(?:/)?$",
+      "routeKeys": {
+        "notfound": "not-found"
+      },
+      "generated": true
+    }
+  ],
+  "redirects": [],
+  "rewrites": [],
+  "assets": {
+    "css": [
+      {
+        "type": "css",
+        "href": "/_expo/static/css/global-62a49634c6c3d90ced95fa13ec2df716.css"
+      }
+    ],
+    "js": [
+      "/_expo/static/js/web/__expo-metro-runtime-97703ae02682710149335928b974f18d.js",
+      "/_expo/static/js/web/__common-f2822189f201baecaf4d2ca2a07313fd.js",
+      "/_expo/static/js/web/entry-fe037fdf883af6592f013155dc9b0fb8.js"
+    ],
+    "favicon": "/favicon.ico"
+  },
+  "rendering": {
+    "mode": "ssr",
+    "file": "_expo/server/render.js"
+  }
+}

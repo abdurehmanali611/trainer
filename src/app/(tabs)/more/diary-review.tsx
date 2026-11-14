@@ -239,10 +239,17 @@ export default function DiaryReviewScreen() {
                       <Text className="text-sm font-medium" numberOfLines={1}>
                         {row.meal_name || 'Meal'}
                       </Text>
-                      <Badge
-                        label={row.status === 'pending' ? 'Pending' : 'Reviewed'}
-                        tone={row.status === 'pending' ? 'warning' : 'success'}
-                      />
+                      <View className="flex-row items-center gap-1.5">
+                        {/* Feature 29: actual vs intended entries are both
+                            reviewed; intended entries are labelled. */}
+                        {row.intent === 'intended' ? (
+                          <Badge label="Intends to use" tone="info" />
+                        ) : null}
+                        <Badge
+                          label={row.status === 'pending' ? 'Pending' : 'Reviewed'}
+                          tone={row.status === 'pending' ? 'warning' : 'success'}
+                        />
+                      </View>
                     </View>
                     <Text variant="muted" className="text-xs">
                       {row.clientName} · {shortDate(row.date)}

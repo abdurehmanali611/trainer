@@ -72,7 +72,7 @@ export function ScreenHeader({
   return (
     <View className="mb-5 gap-1.5">
       <View className="flex-row items-center justify-between gap-3">
-        <Text variant="h2" className="flex-1 text-[26px]">
+        <Text variant="h2" className="flex-1 text-[26px] font-black tracking-tight">
           {title}
         </Text>
         {right}
@@ -162,6 +162,8 @@ export const toneForSession: Record<string, 'success' | 'danger' | 'warning' | '
   canceled: 'default',
   no_show: 'danger',
   scheduled: 'info',
+  approved: 'success', // Feature 21: trainer-approved online session
+  rescheduling: 'warning',
 };
 
 export const toneForRequest: Record<string, 'success' | 'danger' | 'warning'> = {

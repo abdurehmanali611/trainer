@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { DumbbellIcon, MessageCircleIcon, SaladIcon, TargetIcon, WalletIcon } from 'lucide-react-native';
+import { DumbbellIcon, MessageCircleIcon, PencilIcon, SaladIcon, TargetIcon, Trash2Icon, WalletIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
@@ -34,7 +34,14 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { relativeTime, shortDate } from '@/lib/dates';
-import { formatMoney, initials, labelize, normalizeAccessState } from '@/lib/format';
+import {
+  formatMoney,
+  initials,
+  joinEmergencyContact,
+  labelize,
+  normalizeAccessState,
+  splitEmergencyContact,
+} from '@/lib/format';
 import type {
   AccessState,
   Client,
@@ -84,13 +91,19 @@ interface ClientForm {
   mode: Option;
   goals: string;
   medical_history: string;
-  emergency_contact: string;
+  emergency_name: string;
+  emergency_phone: string;
   current_weight: string;
   target_weight: string;
   body_fat: string;
 }
 
 function formFromClient(client: Client): ClientForm {
+  // NOTE: destructure deliberately — the helper returns { name, phone } and a
+  // naive spread here would clobber the client's own name/phone fields.
+  const { name: emergencyName, phone: emergencyPhone } = splitEmergencyContact(
+    client.emergency_contact
+  );
   return {
     name: client.name,
     phone: client.phone,
@@ -98,7 +111,8 @@ function formFromClient(client: Client): ClientForm {
     mode: { value: client.mode, label: labelize(client.mode) },
     goals: client.goals.join(', '),
     medical_history: client.medical_history ?? '',
-    emergency_contact: client.emergency_contact ?? '',
+    emergency_name: emergencyName,
+    emergency_phone: emergencyPhone,
     current_weight: client.current_weight != null ? String(client.current_weight) : '',
     target_weight: client.target_weight != null ? String(client.target_weight) : '',
     body_fat: client.body_fat != null ? String(client.body_fat) : '',
@@ -248,7 +262,11 @@ function InvoiceCard({
         <Badge label={labelize(invoice.status)} tone={toneForInvoice[invoice.status]} />
       </View>
       <Text variant="muted" className="text-xs">
-        Due {shortDate(invoice.due_date)}
+        {invoice.status === 'overdue'
+          ? `Was due ${shortDate(invoice.due_date)}`
+          : invoice.status === 'pending'
+            ? `Due ${shortDate(invoice.due_date)}`
+            : `Due date ${shortDate(invoice.due_date)}`}
         {invoice.paid_at ? ` · paid ${shortDate(invoice.paid_at)}` : ''}
       </Text>
       {invoice.payments.map((p) => (
@@ -275,15 +293,25 @@ export default function ClientDetailScreen() {
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [form, setForm] = React.useState<ClientForm | null>(null);
+  const [form, setFormState] = React.useState<ClientForm | null>(null);
+  // True while the trainer has unsaved edits in the form — the form must not
+  // be re-hydrated over their typing when the client refetches.
+  const formDirtyRef = React.useRef(false);
+  const setForm = React.useCallback<typeof setFormState>((updater) => {
+    formDirtyRef.current = true;
+    return setFormState(updater);
+  }, []);
   const [saving, setSaving] = React.useState(false);
   const [uploading, setUploading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
+  const [resettingOtp, setResettingOtp] = React.useState(false);
   const [periodStart, setPeriodStart] = React.useState('');
   const [periodEnd, setPeriodEnd] = React.useState('');
   const [periodTrial, setPeriodTrial] = React.useState(false);
   const [periodAmount, setPeriodAmount] = React.useState('');
   const [savingPeriod, setSavingPeriod] = React.useState(false);
+  // Feature 9: when set, the Add-period form is in EDIT mode for this row.
+  const [editingPeriod, setEditingPeriod] = React.useState<SubscriptionPeriod | null>(null);
 
   const loadAll = React.useCallback(
     async (silent?: boolean) => {
@@ -320,8 +348,11 @@ export default function ClientDetailScreen() {
     loadAll();
   }, [loadAll]);
 
+  // Re-hydrate the form whenever fresher client data arrives, unless the
+  // trainer is mid-edit. Without this the form kept its first snapshot
+  // forever, so saved changes (e.g. emergency contact) never appeared.
   React.useEffect(() => {
-    if (client) setForm((prev) => prev ?? formFromClient(client));
+    if (client && !formDirtyRef.current) setFormState(formFromClient(client));
   }, [client]);
 
   async function pickAvatar() {
@@ -342,6 +373,7 @@ export default function ClientDetailScreen() {
       const url = await uploadToCloudinary(result.assets[0].uri);
       const updated = await api<Client>(`clients/${id}/`, { method: 'PATCH', body: { avatar_url: url } });
       setClient(updated);
+      if (!formDirtyRef.current) setFormState(formFromClient(updated));
     } catch (e) {
       Alert.alert('Upload failed', e instanceof Error ? e.message : 'Could not upload photo.');
     } finally {
@@ -369,13 +401,17 @@ export default function ClientDetailScreen() {
             .map((g) => g.trim())
             .filter(Boolean),
           medical_history: form.medical_history,
-          emergency_contact: form.emergency_contact,
+          emergency_contact: joinEmergencyContact(form.emergency_name, form.emergency_phone),
           current_weight: parseNum(form.current_weight),
           target_weight: parseNum(form.target_weight),
           body_fat: parseNum(form.body_fat),
         },
       });
       setClient(updated);
+      // Rebuild the form from the server's response so it reflects exactly
+      // what was stored (normalises the emergency contact split too).
+      formDirtyRef.current = false;
+      setFormState(formFromClient(updated));
       Alert.alert('Saved', 'Client profile updated.');
     } catch (e) {
       Alert.alert('Save failed', e instanceof Error ? e.message : 'Something went wrong.');
@@ -384,31 +420,96 @@ export default function ClientDetailScreen() {
     }
   }
 
+  function startEditPeriod(p: SubscriptionPeriod) {
+    // Feature 9: reuse the Add-period form as an editor.
+    setEditingPeriod(p);
+    setPeriodStart(p.start_date);
+    setPeriodEnd(p.end_date);
+    setPeriodTrial(p.is_trial);
+    setPeriodAmount(p.is_trial ? '0' : String(Number(p.amount)));
+  }
+
+  function cancelEditPeriod() {
+    setEditingPeriod(null);
+    setPeriodStart('');
+    setPeriodEnd('');
+    setPeriodTrial(false);
+    setPeriodAmount('');
+  }
+
+  function deletePeriod(p: SubscriptionPeriod) {
+    Alert.alert(
+      'Delete period',
+      `Delete ${shortDate(p.start_date)} → ${shortDate(p.end_date)}? ` +
+        'Its pending invoice is removed too (paid/forgiven history is kept).',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setSavingPeriod(true);
+            try {
+              await api(`periods/${p.id}/`, { method: 'DELETE' });
+              await loadAll(true);
+            } catch (e) {
+              Alert.alert(
+                'Could not delete period',
+                e instanceof Error ? e.message : 'Something went wrong.'
+              );
+            } finally {
+              setSavingPeriod(false);
+            }
+          },
+        },
+      ]
+    );
+  }
+
   async function addPeriod() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(periodStart) || !/^\d{4}-\d{2}-\d{2}$/.test(periodEnd)) {
       Alert.alert('Invalid dates', 'Use YYYY-MM-DD format for start and end dates.');
       return;
     }
+    // Feature 8: paid periods must be > 0 (trial amounts are forced to 0 and
+    // the field is disabled, so this only ever runs for paid periods).
+    const amountValue = Number(periodAmount.trim());
+    if (!periodTrial && (!periodAmount.trim() || !Number.isFinite(amountValue) || amountValue <= 0)) {
+      Alert.alert('Invalid amount', 'A paid period needs an amount greater than 0.');
+      return;
+    }
+    const editing = editingPeriod !== null;
     setSavingPeriod(true);
     try {
-      await api('periods/', {
-        method: 'POST',
-        body: {
-          client: Number(id),
-          start_date: periodStart,
-          end_date: periodEnd,
-          is_trial: periodTrial,
-          amount: periodAmount.trim() || '0',
-        },
-      });
-      Alert.alert('Period added', 'The subscription period was created.');
-      setPeriodStart('');
-      setPeriodEnd('');
-      setPeriodTrial(false);
-      setPeriodAmount('');
+      const body = {
+        start_date: periodStart,
+        end_date: periodEnd,
+        is_trial: periodTrial,
+        amount: periodTrial ? '0' : periodAmount.trim(),
+      };
+      if (editing) {
+        // Feature 9: PATCH the saved row (partial — package stays untouched).
+        await api(`periods/${editingPeriod!.id}/`, { method: 'PATCH', body });
+        Alert.alert('Period updated', 'The subscription period was saved.');
+        cancelEditPeriod();
+      } else {
+        await api('periods/', {
+          method: 'POST',
+          // The backend reads `client_id` (and optional `package_id`), not `client`.
+          body: { client_id: Number(id), ...body },
+        });
+        Alert.alert('Period added', 'The subscription period was created.');
+        setPeriodStart('');
+        setPeriodEnd('');
+        setPeriodTrial(false);
+        setPeriodAmount('');
+      }
       await loadAll(true);
     } catch (e) {
-      Alert.alert('Could not add period', e instanceof Error ? e.message : 'Something went wrong.');
+      Alert.alert(
+        editing ? 'Could not update period' : 'Could not add period',
+        e instanceof Error ? e.message : 'Something went wrong.'
+      );
     } finally {
       setSavingPeriod(false);
     }
@@ -451,26 +552,29 @@ export default function ClientDetailScreen() {
     ]);
   }
 
-  function deactivate() {
-    Alert.alert(
-      'Deactivate client?',
-      'They will be removed from your list and lose app access. Their data is kept.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Deactivate',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await api(`clients/${id}/`, { method: 'DELETE' });
-              router.back();
-            } catch (e) {
-              Alert.alert('Failed', e instanceof Error ? e.message : 'Something went wrong.');
-            }
-          },
-        },
-      ]
-    );
+  async function toggleActive() {
+    if (!client) return;
+    // Feature 18: deactivate/reactivate is a SOFT toggle — the client stays
+    // listed (inactive), keeps every data row and their OTP untouched.
+    const nextActive = !client.is_active;
+    setBusy(true);
+    try {
+      const updated = await api<Client>(`clients/${id}/`, {
+        method: 'PATCH',
+        body: { is_active: nextActive },
+      });
+      setClient(updated);
+      Alert.alert(
+        nextActive ? 'Client reactivated' : 'Client deactivated',
+        nextActive
+          ? 'They can log in again with the same OTP and get sessions assigned.'
+          : 'They stay in your list (inactive), cannot log in or be assigned sessions. Their data is kept.'
+      );
+    } catch (e) {
+      Alert.alert('Action failed', e instanceof Error ? e.message : 'Something went wrong.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (loading && !client) return <LoadingView label="Loading client…" />;
@@ -517,6 +621,8 @@ export default function ClientDetailScreen() {
         <View className="items-center gap-1.5">
           <View className="flex-row items-center gap-2">
             <Text className="text-lg font-semibold">{client.name}</Text>
+            {/* Feature 18: inactive clients are visibly marked. */}
+            {!client.is_active ? <Badge label="Inactive" tone="default" /> : null}
             <Badge label={labelize(client.mode)} tone={toneForMode[client.mode]} />
           </View>
           <Text variant="muted" className="text-xs">
@@ -535,7 +641,49 @@ export default function ClientDetailScreen() {
           <Text variant="muted" className="text-xs">
             {accessState.reason || access.explain}
           </Text>
-          {client.otp ? (
+          {client.first_login_at ? (
+            // Feature 4/5: client has logged in at least once — the OTP is no
+            // longer returned; offer a Reset that issues a fresh one.
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resettingOtp}
+              onPress={() =>
+                Alert.alert(
+                  'Reset login OTP',
+                  `A new OTP will be generated for ${client.name} and the current one stops working. Continue?`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Reset',
+                      style: 'destructive',
+                      onPress: async () => {
+                        setResettingOtp(true);
+                        try {
+                          const res = await api<{ otp: string }>(`clients/${id}/otp/`, {
+                            method: 'POST',
+                          });
+                          setClient((c) => (c ? { ...c, otp: res.otp, first_login_at: null } : c));
+                          Alert.alert(
+                            'New OTP',
+                            `Share this OTP with ${client.name}: ${res.otp}`
+                          );
+                        } catch (e) {
+                          Alert.alert(
+                            'Reset failed',
+                            e instanceof Error ? e.message : 'Something went wrong.'
+                          );
+                        } finally {
+                          setResettingOtp(false);
+                        }
+                      },
+                    },
+                  ]
+                )
+              }>
+              <Text className="text-sm">Reset login OTP</Text>
+            </Button>
+          ) : client.otp ? (
             <Text variant="muted" className="text-xs">
               Login OTP: {client.otp}
             </Text>
@@ -644,10 +792,16 @@ export default function ClientDetailScreen() {
                 onChangeText={(v) => setForm((f) => (f ? { ...f, medical_history: v } : f))}
               />
             </Field>
-            <Field label="Emergency contact">
+            <Field label="Emergency name">
               <Input
-                value={form.emergency_contact}
-                onChangeText={(v) => setForm((f) => (f ? { ...f, emergency_contact: v } : f))}
+                value={form.emergency_name}
+                onChangeText={(v) => setForm((f) => (f ? { ...f, emergency_name: v } : f))}
+              />
+            </Field>
+            <Field label="Emergency phone">
+              <PhoneNumberInput
+                value={form.emergency_phone}
+                onChange={(v) => setForm((f) => (f ? { ...f, emergency_phone: v } : f))}
               />
             </Field>
             <View className="flex-row gap-3">
@@ -705,7 +859,24 @@ export default function ClientDetailScreen() {
                       {p.package_name ? ` · ${p.package_name}` : ''}
                     </Text>
                   </View>
-                  {p.is_trial ? <Badge label="Trial" tone="info" /> : null}
+                  <View className="flex-row items-center gap-1">
+                    {p.is_trial ? <Badge label="Trial" tone="info" /> : null}
+                    {/* Feature 9: edit reuses the Add-period form; delete asks first. */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={savingPeriod}
+                      onPress={() => startEditPeriod(p)}>
+                      <Icon as={PencilIcon} size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={savingPeriod}
+                      onPress={() => deletePeriod(p)}>
+                      <Icon as={Trash2Icon} size={16} className="text-destructive" />
+                    </Button>
+                  </View>
                 </View>
               ))
             )}
@@ -714,7 +885,9 @@ export default function ClientDetailScreen() {
           <Separator />
 
           <View className="gap-3">
-            <Text className="text-sm font-medium">Add period</Text>
+            <Text className="text-sm font-medium">
+              {editingPeriod ? 'Edit period' : 'Add period'}
+            </Text>
             <View className="flex-row gap-3">
               <DatePopoverField
                 label="Start date"
@@ -732,17 +905,42 @@ export default function ClientDetailScreen() {
               />
             </View>
             <Field label="Amount">
-              <Input keyboardType="decimal-pad" value={periodAmount} onChangeText={setPeriodAmount} />
+              <Input
+                keyboardType="decimal-pad"
+                value={periodAmount}
+                onChangeText={setPeriodAmount}
+                // Feature 8: a free trial is always 0 and cannot be edited.
+                editable={!periodTrial}
+                placeholder={periodTrial ? '0 (free trial)' : 'Amount'}
+              />
             </Field>
             <View className="flex-row items-center justify-between">
               <Text variant="muted" className="text-sm">
                 Free trial period
               </Text>
-              <Switch checked={periodTrial} onCheckedChange={setPeriodTrial} />
+              <Switch
+                checked={periodTrial}
+                onCheckedChange={(checked) => {
+                  setPeriodTrial(checked);
+                  // Feature 8: turning the trial ON forces the amount to 0.
+                  if (checked) setPeriodAmount('0');
+                }}
+              />
             </View>
             <Button variant="outline" disabled={savingPeriod} onPress={addPeriod}>
-              <Text>{savingPeriod ? 'Adding…' : 'Add period'}</Text>
+              <Text>
+                {savingPeriod
+                  ? 'Saving…'
+                  : editingPeriod
+                    ? 'Save period'
+                    : 'Add period'}
+              </Text>
             </Button>
+            {editingPeriod ? (
+              <Button variant="ghost" disabled={savingPeriod} onPress={cancelEditPeriod}>
+                <Text>Cancel edit</Text>
+              </Button>
+            ) : null}
           </View>
 
           <Separator />
@@ -790,11 +988,20 @@ export default function ClientDetailScreen() {
         </Section>
 
         <Section title="Danger zone">
-          <Button variant="destructive" onPress={deactivate}>
-            <Text className="text-sm font-medium text-white">Deactivate client</Text>
+          {/* Feature 18: soft deactivate/reactivate toggle — never a delete.
+              The trash icon for permanent deletion lives in the Clients list. */}
+          <Button
+            variant={client.is_active ? 'destructive' : 'default'}
+            disabled={busy}
+            onPress={toggleActive}>
+            <Text className="text-sm font-medium text-white">
+              {client.is_active ? 'Deactivate client' : 'Reactivate client'}
+            </Text>
           </Button>
           <Text variant="muted" className="text-xs">
-            Soft-deletes the client: they disappear from your list and lose app access. Data is kept.
+            {client.is_active
+              ? 'Soft-deactivates the client: they keep their data and OTP, cannot log in or receive sessions, and stay listed as inactive.'
+              : 'Reactivating restores login with the same OTP and session assignment. All data is intact.'}
           </Text>
         </Section>
       </View>

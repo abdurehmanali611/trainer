@@ -9,6 +9,7 @@ import { ActivityIndicator, useColorScheme, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { WebAlertHost } from '@/lib/web-alert';
 import { useInAppNotifications } from '@/hooks/use-in-app-notifications';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { NotificationBanner } from '@/components/notification-banner';
 
 SplashScreen.preventAutoHideAsync();
@@ -19,14 +20,21 @@ function RootNavigator() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const { latest, dismiss } = useInAppNotifications(status === 'signedIn');
+  usePushNotifications(status === 'signedIn');
   const [dismissedNotices, setDismissedNotices] = React.useState<string[]>([]);
 
   const inAuthGroup = segments[0] === 'auth';
   const inPlatformLock = segments[0] === 'platform-lock';
 
+  // Features 16/17: subscription warnings (quarterly renewal window, trial
+  // ending) surface in the Billing section only — never as a global/header
+  // banner. Only critical notices (payment required / on hold) surface here,
+  // and the platform gate redirects blocked states to the portal anyway.
   const platformNotice = inPlatformLock
     ? null
-    : (platform?.notices.find((n) => !dismissedNotices.includes(n.id)) ?? null);
+    : (platform?.notices.find(
+        (n) => n.severity === 'critical' && !dismissedNotices.includes(n.id)
+      ) ?? null);
   const banner =
     latest ??
     (platformNotice

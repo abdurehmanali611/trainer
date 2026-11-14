@@ -16,10 +16,18 @@ export interface Trainer {
 }
 
 export type ClientMode = 'paid' | 'trial' | 'illustrative';
-export type SessionStatus = 'scheduled' | 'completed' | 'canceled' | 'no_show';
+export type SessionStatus =
+  | 'scheduled'
+  | 'completed'
+  | 'canceled'
+  | 'no_show'
+  // Feature 21: the four remark-online outcomes.
+  | 'approved'
+  | 'rescheduling';
 export type RequestStatus = 'pending' | 'approved' | 'declined';
 export type InvoiceStatus = 'pending' | 'paid' | 'overdue' | 'forgiven';
-export type PaymentChannel = 'cash' | 'bank' | 'telebirr';
+/** Feature 12: exactly these three payment channels. */
+export type PaymentChannel = 'telebirr' | 'cbe' | 'others';
 export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'forgiven';
 export type MessageKind = 'text' | 'image' | 'voice';
 
@@ -47,7 +55,9 @@ export interface Client {
   access_state: AccessState;
   goal_label: string;
   must_change_credential: boolean;
-  otp?: string;
+  otp?: string | null;
+  /** Set on the client's first login — the UI then hides the OTP (features 4–5). */
+  first_login_at?: string | null;
   medical_history?: string;
   emergency_contact?: string;
   measurements?: Measurement[];
@@ -173,6 +183,21 @@ export interface DietPlan {
   meals: Meal[];
   is_template: boolean;
   created_at: string;
+  /** Feature 26: client diet self-reports — trainer view is read-only. */
+  adherence_reports?: DietAdherence[];
+}
+
+/** Feature 26: the client approves or declines the diet with a required reason. */
+export interface DietAdherence {
+  id: number;
+  client_id: number;
+  client_name?: string;
+  diet_plan_id?: number | null;
+  diet_plan_name?: string | null;
+  session_id?: number | null;
+  status: 'approved' | 'declined';
+  reason: string;
+  created_at: string;
 }
 
 export interface Session {
@@ -187,6 +212,8 @@ export interface Session {
   status: SessionStatus;
   notes: string;
   is_online: boolean;
+  /** Optional client rating (1–5) — set by the client app on self-guided sessions. */
+  rating?: number | null;
   created_at: string;
 }
 
@@ -316,6 +343,8 @@ export interface FoodDiaryEntry {
   description: string;
   calories: number | null;
   photo_url: string;
+  /** Feature 29: actually used vs intended-to-use entries. */
+  intent?: 'actual' | 'intended';
   status: 'pending' | 'reviewed';
   trainer_feedback: string;
   created_at: string;

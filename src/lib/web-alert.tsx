@@ -47,6 +47,11 @@ export function isWebAlertReady(): boolean {
   return Platform.OS === 'web' && listener !== null;
 }
 
+/** True while a web alert dialog is currently on screen. */
+export function isWebAlertShowing(): boolean {
+  return current !== null;
+}
+
 /**
  * Replaces `Alert.alert` on web.
  *

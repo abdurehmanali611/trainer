@@ -1,134 +1,135 @@
 import * as React from 'react';
 import { Alert, View } from 'react-native';
 
-import { Badge, toneForInvoice } from '@/components/screen';
+import { Badge } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Text } from '@/components/ui/text';
 import {
-  INVOICE_FILTERS,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Text } from '@/components/ui/text';
+import { Textarea } from '@/components/ui/textarea';
+import {
   billingErrorMessage,
   decideClientPayment,
-  fetchBillingSummary,
-  fetchInvoices,
   fetchPendingPayments,
-  recordClientPayment,
-  type BillingSummary,
-  type InvoiceFilter,
 } from '@/lib/client-billing';
 import { shortDate } from '@/lib/dates';
 import { formatMoney, labelize } from '@/lib/format';
-import type { Invoice, Payment, PaymentChannel } from '@/lib/types';
+import type { Payment } from '@/lib/types';
 
-const CHANNELS: PaymentChannel[] = ['cash', 'telebirr', 'bank'];
-
-const FILTER_LABELS: Record<InvoiceFilter, string> = {
-  all: 'All',
-  pending: 'Pending',
-  overdue: 'Overdue',
-  paid: 'Paid',
-  forgiven: 'Forgiven',
-};
-
+/**
+ * Feature 14: the trainer's client-payment area shows ONLY incoming
+ * approval requests — pending `Payment` rows submitted through the client's
+ * payment portal (feature 12), each with Approve / Reject.
+ *
+ * Reject pops an alert requiring a reason: submission is blocked while the
+ * reason is empty, and the reason is stored on the payment
+ * (`decision_note`) and delivered to the client as the rejection
+ * notification. Approve marks the invoice paid and notifies the client that
+ * access is unlocked.
+ */
 export function ClientBillingSection() {
-  const [summary, setSummary] = React.useState<BillingSummary | null>(null);
-  const [invoices, setInvoices] = React.useState<Invoice[]>([]);
-  const [pendingPayments, setPendingPayments] = React.useState<Payment[]>([]);
-  const [filter, setFilter] = React.useState<InvoiceFilter>('all');
+  const [payments, setPayments] = React.useState<Payment[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const [info, setInfo] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
-  const [recordingId, setRecordingId] = React.useState<number | null>(null);
-  const [channel, setChannel] = React.useState<PaymentChannel>('cash');
-  const [transactionRef, setTransactionRef] = React.useState('');
 
-  const reload = React.useCallback(async () => {
-    setError(null);
+  // Reject dialog — reason is required.
+  const [rejecting, setRejecting] = React.useState<Payment | null>(null);
+  const [reason, setReason] = React.useState('');
+  const [reasonError, setReasonError] = React.useState<string | null>(null);
+
+  const load = React.useCallback(async () => {
     try {
-      const [nextSummary, nextInvoices, nextPending] = await Promise.all([
-        fetchBillingSummary(),
-        fetchInvoices(filter),
-        fetchPendingPayments(),
-      ]);
-      setSummary(nextSummary);
-      setInvoices(nextInvoices);
-      setPendingPayments(nextPending);
+      const rows = await fetchPendingPayments();
+      setPayments(rows);
+      setError(null);
     } catch (e) {
-      setError(billingErrorMessage(e, 'Could not load client billing.'));
+      setError(billingErrorMessage(e, 'Could not load payment requests.'));
     } finally {
       setLoading(false);
     }
-  }, [filter]);
+  }, []);
 
   React.useEffect(() => {
-    void reload();
-  }, [reload]);
+    void load();
+  }, [load]);
 
-  const decide = async (payment: Payment, action: 'approve' | 'forgive') => {
-    setBusy(true);
-    setError(null);
-    setInfo(null);
-    try {
-      await decideClientPayment(payment, action);
-      setInfo(action === 'approve' ? 'Payment approved.' : 'Invoice forgiven.');
-      await reload();
-    } catch (e) {
-      setError(billingErrorMessage(e, 'Could not update the payment.'));
-    } finally {
-      setBusy(false);
-    }
-  };
+  function closeReject() {
+    setRejecting(null);
+    setReason('');
+    setReasonError(null);
+  }
 
-  const confirmDecide = (payment: Payment, action: 'approve' | 'forgive') => {
-    const amount = `${formatMoney(payment.invoice_info.amount)} ETB`;
+  function approve(payment: Payment) {
     Alert.alert(
-      action === 'approve' ? 'Approve payment' : 'Forgive invoice',
-      action === 'approve'
-        ? `Mark the ${amount} payment from ${payment.client_name} as paid?`
-        : `Forgive the ${amount} invoice for ${payment.client_name}?`,
+      'Approve payment',
+      `Approve ${payment.transaction_id} from ${payment.client_name}? Their invoice is marked paid and they are notified.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: action === 'approve' ? 'Approve' : 'Forgive',
-          style: action === 'approve' ? 'default' : 'destructive',
-          onPress: () => void decide(payment, action),
+          text: 'Approve',
+          onPress: () => {
+            setBusy(true);
+            decideClientPayment(payment, 'approve')
+              .then(() => load())
+              .catch((e) =>
+                Alert.alert('Could not approve', billingErrorMessage(e, 'Something went wrong.'))
+              )
+              .finally(() => setBusy(false));
+          },
         },
       ]
     );
-  };
+  }
 
-  const submitRecording = async () => {
-    if (recordingId === null) return;
-    if (!transactionRef.trim()) {
-      setError('Enter the transaction ID for this payment.');
+  function submitReject() {
+    if (!rejecting) return;
+    // Required: a rejection must always carry a reason.
+    if (!reason.trim()) {
+      setReasonError('A reason is required to reject a payment.');
       return;
     }
+    const payment = rejecting;
+    const note = reason.trim();
     setBusy(true);
-    setError(null);
-    setInfo(null);
-    try {
-      const created = await recordClientPayment(recordingId, channel, transactionRef.trim());
-      await decideClientPayment(created, 'approve');
-      setInfo('Payment recorded and marked paid.');
-      setRecordingId(null);
-      setTransactionRef('');
-      await reload();
-    } catch (e) {
-      setError(billingErrorMessage(e, 'Could not record the payment.'));
-    } finally {
-      setBusy(false);
-    }
-  };
+    setReasonError(null);
+    decideClientPayment(payment, 'reject', note)
+      .then(() => {
+        closeReject();
+        return load();
+      })
+      .catch((e) => setReasonError(billingErrorMessage(e, 'Could not reject the payment.')))
+      .finally(() => setBusy(false));
+  }
 
-  if (loading && !summary) {
+  if (loading && payments.length === 0) {
     return (
       <Card className="gap-2 p-4">
-        <Text className="text-sm font-semibold">Client billing</Text>
+        <Text className="text-sm font-semibold">Payment requests</Text>
         <Text variant="muted" className="text-sm">
-          Loading invoices and payments…
+          Loading requests…
         </Text>
+      </Card>
+    );
+  }
+
+  if (error && payments.length === 0) {
+    return (
+      <Card className="gap-2 p-4">
+        <Text className="text-sm font-semibold">Payment requests</Text>
+        <Text variant="muted" className="text-sm">
+          {error}
+        </Text>
+        <Button size="sm" variant="outline" className="self-start" onPress={() => void load()}>
+          <Text className="text-xs font-semibold">Retry</Text>
+        </Button>
       </Card>
     );
   }
@@ -136,51 +137,23 @@ export function ClientBillingSection() {
   return (
     <View className="gap-4">
       <Card className="gap-3 p-4">
-        <Text className="text-sm font-semibold">Client billing</Text>
-        {summary ? (
-          <View className="gap-2">
-            <View className="flex-row items-center justify-between gap-2">
-              <Text variant="muted" className="text-sm">
-                Collected this month
-              </Text>
-              <Text className="text-sm font-medium">
-                {formatMoney(summary.collected_this_month)} ETB
-              </Text>
-            </View>
-            <View className="flex-row items-center justify-between gap-2">
-              <Text variant="muted" className="text-sm">
-                Awaiting review
-              </Text>
-              <Text className="text-sm font-medium">
-                {summary.pending_payments} · {formatMoney(summary.pending_amount)} ETB
-              </Text>
-            </View>
-            <View className="flex-row items-center justify-between gap-2">
-              <Text variant="muted" className="text-sm">
-                Overdue invoices
-              </Text>
-              <Text className="text-sm font-medium">{summary.overdue_invoices}</Text>
-            </View>
-            {summary.by_channel.length > 0 ? (
-              <View className="flex-row flex-wrap gap-2 pt-1">
-                {summary.by_channel.map((entry) => (
-                  <Badge
-                    key={entry.channel}
-                    tone="info"
-                    label={`${labelize(entry.channel)} · ${formatMoney(entry.total)}`}
-                  />
-                ))}
-              </View>
-            ) : null}
-          </View>
-        ) : null}
-      </Card>
+        <View className="flex-row items-center justify-between gap-2">
+          <Text className="text-sm font-semibold">Payment requests</Text>
+          {payments.length > 0 ? (
+            <Badge tone="warning" label={`${payments.length} awaiting approval`} />
+          ) : null}
+        </View>
 
-      {pendingPayments.length > 0 ? (
-        <Card className="gap-3 p-4">
-          <Text className="text-sm font-semibold">Awaiting your review</Text>
-          {pendingPayments.map((payment) => (
-            <View key={payment.id} className="gap-2 rounded-xl border border-white/8 bg-white/3 p-3">
+        {payments.length === 0 ? (
+          <Text variant="muted" className="text-sm">
+            No incoming payment requests. When a client submits a payment it appears here for
+            approval.
+          </Text>
+        ) : (
+          payments.map((payment) => (
+            <View
+              key={payment.id}
+              className="gap-2 rounded-xl border border-white/8 bg-white/3 p-3">
               <View className="flex-row items-center justify-between gap-2">
                 <Text className="text-sm font-semibold">{payment.client_name}</Text>
                 <Text className="text-sm font-medium">
@@ -192,115 +165,68 @@ export function ClientBillingSection() {
                 {shortDate(payment.created_at)}
               </Text>
               <View className="flex-row gap-2">
-                <Button size="sm" disabled={busy} onPress={() => confirmDecide(payment, 'approve')}>
+                <Button size="sm" disabled={busy} onPress={() => approve(payment)}>
                   <Text className="text-xs font-semibold text-primary-foreground">Approve</Text>
                 </Button>
                 <Button
                   size="sm"
                   variant="destructive"
                   disabled={busy}
-                  onPress={() => confirmDecide(payment, 'forgive')}>
-                  <Text className="text-xs font-semibold text-destructive-foreground">
-                    Forgive
-                  </Text>
-                </Button>
-              </View>
-            </View>
-          ))}
-        </Card>
-      ) : null}
-
-      <Card className="gap-3 p-4">
-        <Text className="text-sm font-semibold">Invoices</Text>
-        <View className="flex-row flex-wrap gap-2">
-          {INVOICE_FILTERS.map((option) => (
-            <Button
-              key={option}
-              size="sm"
-              variant={filter === option ? 'default' : 'outline'}
-              onPress={() => setFilter(option)}>
-              <Text className="text-xs">{FILTER_LABELS[option]}</Text>
-            </Button>
-          ))}
-        </View>
-
-        {invoices.length === 0 ? (
-          <Text variant="muted" className="text-sm">
-            No invoices here.
-          </Text>
-        ) : (
-          invoices.map((invoice) => (
-            <View key={invoice.id} className="gap-2 rounded-xl border border-white/8 bg-white/3 p-3">
-              <View className="flex-row items-center justify-between gap-2">
-                <Text className="text-sm font-semibold">{invoice.client_name}</Text>
-                <Badge tone={toneForInvoice[invoice.status]} label={labelize(invoice.status)} />
-              </View>
-              <View className="flex-row items-center justify-between gap-2">
-                <Text variant="muted" className="text-xs">
-                  Due {shortDate(invoice.due_date)}
-                </Text>
-                <Text className="text-sm font-medium">{formatMoney(invoice.amount)} ETB</Text>
-              </View>
-              {invoice.period_info ? (
-                <Text variant="muted" className="text-xs">
-                  {shortDate(invoice.period_info.start_date)} –{' '}
-                  {shortDate(invoice.period_info.end_date)}
-                </Text>
-              ) : null}
-
-              {(invoice.status === 'pending' || invoice.status === 'overdue') &&
-              recordingId !== invoice.id ? (
-                <Button
-                  size="sm"
-                  variant="outline"
                   onPress={() => {
-                    setRecordingId(invoice.id);
-                    setTransactionRef('');
-                    setError(null);
-                    setInfo(null);
+                    setRejecting(payment);
+                    setReason('');
+                    setReasonError(null);
                   }}>
-                  <Text className="text-xs font-semibold">Record payment</Text>
+                  <Text className="text-xs font-semibold text-destructive-foreground">Reject</Text>
                 </Button>
-              ) : null}
-
-              {recordingId === invoice.id ? (
-                <View className="gap-2">
-                  <View className="flex-row flex-wrap gap-2">
-                    {CHANNELS.map((option) => (
-                      <Button
-                        key={option}
-                        size="sm"
-                        variant={channel === option ? 'default' : 'outline'}
-                        onPress={() => setChannel(option)}>
-                        <Text className="text-xs">{labelize(option)}</Text>
-                      </Button>
-                    ))}
-                  </View>
-                  <Input
-                    placeholder="Transaction ID"
-                    autoCapitalize="none"
-                    value={transactionRef}
-                    onChangeText={setTransactionRef}
-                  />
-                  <View className="flex-row gap-2">
-                    <Button size="sm" disabled={busy} onPress={() => void submitRecording()}>
-                      <Text className="text-xs font-semibold text-primary-foreground">
-                        {busy ? 'Saving…' : 'Save payment'}
-                      </Text>
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setRecordingId(null)}>
-                      <Text className="text-xs font-semibold">Cancel</Text>
-                    </Button>
-                  </View>
-                </View>
-              ) : null}
+              </View>
             </View>
           ))
         )}
       </Card>
 
-      {info ? <Text className="text-xs text-emerald-600">{info}</Text> : null}
-      {error ? <Text className="text-xs text-destructive">{error}</Text> : null}
+      {/* Feature 14: reject pops an alert that requires a reason. */}
+      <Dialog
+        open={rejecting !== null}
+        onOpenChange={(open) => {
+          if (!open) closeReject();
+        }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject payment</DialogTitle>
+            <DialogDescription>
+              {rejecting ? `${rejecting.client_name} · ${rejecting.transaction_id}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <View className="gap-2">
+            <Text variant="muted" className="text-sm">
+              Tell the client why this payment is rejected. They are notified right away.
+            </Text>
+            <Textarea
+              value={reason}
+              onChangeText={(t) => {
+                setReason(t);
+                setReasonError(null);
+              }}
+              placeholder="e.g. Transaction ID not found in the account"
+              numberOfLines={3}
+            />
+            {reasonError ? (
+              <Text className="text-sm text-red-600 dark:text-red-400">{reasonError}</Text>
+            ) : null}
+          </View>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onPress={closeReject}>
+              <Text className="text-xs font-semibold">Cancel</Text>
+            </Button>
+            <Button size="sm" variant="destructive" disabled={busy} onPress={submitReject}>
+              <Text className="text-xs font-semibold text-destructive-foreground">
+                {busy ? 'Rejecting…' : 'Reject payment'}
+              </Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </View>
   );
 }

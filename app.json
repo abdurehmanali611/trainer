@@ -45,7 +45,14 @@
       "expo-image",
       "expo-status-bar",
       "expo-video",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#4F46E5"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

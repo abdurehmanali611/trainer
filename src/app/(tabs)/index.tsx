@@ -20,15 +20,16 @@ interface StatItem {
 }
 
 const STAT_TONES: Record<string, string> = {
-  'Total clients': 'bg-indigo-500/10 ring-indigo-500/20 text-indigo-600 dark:text-indigo-300',
-  Paid: 'bg-emerald-500/10 ring-emerald-500/20 text-emerald-600 dark:text-emerald-300',
-  Trial: 'bg-sky-500/10 ring-sky-500/20 text-sky-600 dark:text-sky-300',
+  'Total clients': 'bg-cyan-500/15 ring-cyan-500/25 text-cyan-700 dark:text-cyan-300',
+  Paid: 'bg-lime-500/15 ring-lime-500/25 text-lime-700 dark:text-lime-300',
+  Trial: 'bg-sky-500/15 ring-sky-500/25 text-sky-700 dark:text-sky-300',
   Illustrative: 'bg-slate-500/10 ring-slate-500/20 text-slate-600 dark:text-slate-300',
-  'Payment due': 'bg-amber-500/10 ring-amber-500/25 text-amber-600 dark:text-amber-300',
-  Blocked: 'bg-rose-500/10 ring-rose-500/25 text-rose-600 dark:text-rose-300',
-  Inactive: 'bg-violet-500/10 ring-violet-500/20 text-violet-600 dark:text-violet-300',
-  'Unpaid invoices': 'bg-orange-500/10 ring-orange-500/25 text-orange-600 dark:text-orange-300',
-  'Revenue this month': 'bg-teal-500/10 ring-teal-500/20 text-teal-600 dark:text-teal-300',
+  'Payment due': 'bg-amber-500/15 ring-amber-500/30 text-amber-700 dark:text-amber-300',
+  Blocked: 'bg-rose-500/15 ring-rose-500/30 text-rose-700 dark:text-rose-300',
+  Inactive: 'bg-slate-500/10 ring-slate-500/20 text-slate-600 dark:text-slate-300',
+  'Needs period': 'bg-orange-500/15 ring-orange-500/25 text-orange-700 dark:text-orange-300',
+  'Unpaid invoices': 'bg-orange-500/15 ring-orange-500/30 text-orange-700 dark:text-orange-300',
+  'Revenue this month': 'bg-teal-500/15 ring-teal-500/25 text-teal-700 dark:text-teal-300',
 };
 
 function StatCard({ label, value }: StatItem) {
@@ -89,8 +90,11 @@ function BarChart({
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <View className="bg-card gap-4 rounded-2xl border border-border/60 p-5 shadow-sm shadow-black/[0.06] dark:shadow-black/30">
-      <Text className="text-base font-bold">{title}</Text>
+    <View className="gap-4 rounded-xl border border-cyan-500/10 bg-card p-5 shadow-md shadow-cyan-950/5 dark:border-cyan-400/15 dark:shadow-black/40">
+      <View className="flex-row items-center gap-2">
+        <View className="h-2 w-2 rounded-full bg-lime-500" />
+        <Text className="text-base font-extrabold tracking-tight">{title}</Text>
+      </View>
       {children}
     </View>
   );
@@ -162,10 +166,10 @@ export default function DashboardScreen() {
             <Text className="text-xs font-semibold uppercase tracking-wider text-white/70">
               {dayLabel(todayISO())}
             </Text>
-            <Text className="mt-1 text-2xl font-extrabold text-white">
+            <Text className="mt-1 text-2xl font-black tracking-tight text-white">
               {greeting}, {name.split(' ')[0]}
             </Text>
-            <Text className="mt-1 text-sm text-white/80">
+            <Text className="mt-1 text-sm font-medium text-cyan-50/90">
               Here&apos;s your coaching day at a glance.
             </Text>
           </View>
