@@ -3,6 +3,7 @@ import { Alert, Pressable, View } from 'react-native';
 import { CalendarPlusIcon, DumbbellIcon, NotebookPenIcon, UserIcon, VideoIcon } from 'lucide-react-native';
 
 import { Badge, EmptyView, ErrorView, LoadingView, Screen, toneForRequest, toneForSession } from '@/components/screen';
+import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -85,7 +86,7 @@ function SessionRow({ session, onPress }: { session: Session; onPress: () => voi
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm shadow-black/5 active:opacity-70 dark:shadow-black/30">
+      className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm shadow-black/30 active:opacity-70">
       <View className="w-16 gap-0.5">
         <Text className="font-semibold">{clockTime(session.time)}</Text>
         <Text variant="muted" className="text-xs">
@@ -131,7 +132,7 @@ function RequestRow({
   onReview: () => void;
 }) {
   return (
-    <View className="gap-2 rounded-xl border border-border bg-card p-4 shadow-sm shadow-black/5 dark:shadow-black/30">
+    <View className="gap-2 rounded-xl border border-border bg-card p-4 shadow-sm shadow-black/30">
       <View className="flex-row items-start justify-between gap-3">
         <View className="min-w-0 flex-1 gap-0.5">
           <Text className="text-sm font-medium" numberOfLines={1}>
@@ -656,10 +657,7 @@ export default function ScheduleScreen() {
             />
           ) : (
             groups.map(([date, items]) => (
-              <View key={date} className="gap-2">
-                <Text variant="muted" className="font-medium">
-                  {dayLabel(date)}
-                </Text>
+              <Section key={date} title={dayLabel(date)} className="gap-2.5">
                 {items.map((session) => (
                   <SessionRow
                     key={session.id}
@@ -667,14 +665,13 @@ export default function ScheduleScreen() {
                     onPress={() => setActiveSession(session)}
                   />
                 ))}
-              </View>
+              </Section>
             ))
           )}
         </View>
       ) : (
-        <View className="gap-6">
-          <View className="gap-3">
-            <Text variant="h4">Reschedule requests</Text>
+        <View className="gap-4">
+          <Section title="Reschedule requests" className="gap-3">
             {reschedules.length === 0 ? (
               <Text variant="muted">No pending reschedule requests.</Text>
             ) : (
@@ -701,10 +698,9 @@ export default function ScheduleScreen() {
                 />
               ))
             )}
-          </View>
+          </Section>
 
-          <View className="gap-3">
-            <Text variant="h4">Permission requests</Text>
+          <Section title="Permission requests" className="gap-3">
             {permissions.length === 0 ? (
               <Text variant="muted">No pending permission requests.</Text>
             ) : (
@@ -727,7 +723,7 @@ export default function ScheduleScreen() {
                 />
               ))
             )}
-          </View>
+          </Section>
         </View>
       )}
 

@@ -3,10 +3,51 @@ import { API_URL } from '@/lib/config';
 
 const ACCESS_KEY = 'trainer.access';
 const REFRESH_KEY = 'trainer.refresh';
+/** Default request timeout — never leave the UI blocked on a hung socket. */
+const DEFAULT_TIMEOUT_MS = 12_000;
 
 let access: string | null = null;
 let refresh: string | null = null;
 let refreshPromise: Promise<boolean> | null = null;
+
+export class ApiError extends Error {
+  status: number;
+  body: Record<string, unknown>;
+  constructor(status: number, body: Record<string, unknown>) {
+    super(
+      (typeof body.detail === 'string' && body.detail) ||
+        Object.values(body)
+          .flat()
+          .map(String)
+          .join('\n') ||
+        `Request failed (${status})`
+    );
+    this.status = status;
+    this.body = body;
+  }
+}
+
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit = {},
+  timeoutMs = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller?.signal ?? init.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError(0, { detail: 'Request timed out. Check your connection.' });
+    }
+    throw error;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
 
 export async function loadTokens(): Promise<{ access: string | null; refresh: string | null }> {
   const [a, r] = await AsyncStorage.multiGet([ACCESS_KEY, REFRESH_KEY]);
@@ -37,43 +78,25 @@ export function getAccessToken(): string | null {
 /** Ask the server to expire this session, then drop the local tokens. */
 export async function revokeSession(): Promise<void> {
   // Bounded: a hung logout request must never block the sign-out navigation.
-  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = controller ? setTimeout(() => controller.abort(), 4000) : null;
   try {
     if (access || refresh) {
-      await fetch(`${API_URL}/api/auth/logout/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(access ? { Authorization: `Bearer ${access}` } : {}),
+      await fetchWithTimeout(
+        `${API_URL}/api/auth/logout/`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(access ? { Authorization: `Bearer ${access}` } : {}),
+          },
+          body: JSON.stringify({ refresh }),
         },
-        body: JSON.stringify({ refresh }),
-        signal: controller?.signal,
-      });
+        4000
+      );
     }
   } catch {
     // Offline / server unreachable / timed out — still sign the user out locally.
-  } finally {
-    if (timer) clearTimeout(timer);
   }
   await clearTokens();
-}
-
-export class ApiError extends Error {
-  status: number;
-  body: Record<string, unknown>;
-  constructor(status: number, body: Record<string, unknown>) {
-    super(
-      (typeof body.detail === 'string' && body.detail) ||
-        Object.values(body)
-          .flat()
-          .map(String)
-          .join('\n') ||
-        `Request failed (${status})`
-    );
-    this.status = status;
-    this.body = body;
-  }
 }
 
 async function tryRefresh(): Promise<boolean> {
@@ -81,7 +104,7 @@ async function tryRefresh(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/auth/token/refresh/`, {
+        const res = await fetchWithTimeout(`${API_URL}/api/auth/token/refresh/`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh }),
@@ -129,7 +152,7 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
     const headers: Record<string, string> = {};
     if (auth && access) headers.Authorization = `Bearer ${access}`;
     if (!formData) headers['Content-Type'] = 'application/json';
-    return fetch(url, {
+    return fetchWithTimeout(url, {
       method,
       headers,
       body: formData ?? (body !== undefined ? JSON.stringify(body) : undefined),
@@ -139,7 +162,8 @@ export async function api<T = unknown>(path: string, options: RequestOptions = {
   let res: Response;
   try {
     res = await doFetch();
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError(0, { detail: 'Network error. Check your connection.' });
   }
 

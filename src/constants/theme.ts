@@ -1,5 +1,5 @@
 /**
- * Athletic Trainer OS theme — cyan + lime on deep navy.
+ * Dark system theme — teal primary on slate navy (hotcol-aligned).
  */
 
 import '@/global.css';
@@ -8,22 +8,22 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#0B1220',
-    background: '#F3F7FB',
-    backgroundElement: '#E4EEF5',
-    backgroundSelected: '#CBE8F0',
-    textSecondary: '#5B6B7C',
-    primary: '#0891B2',
-    accent: '#65A30D',
+    text: '#F1F5F9',
+    background: '#0B1220',
+    backgroundElement: '#1A2332',
+    backgroundSelected: '#243044',
+    textSecondary: '#94A3B8',
+    primary: '#2DD4BF',
+    accent: '#F5B042',
   },
   dark: {
-    text: '#F0FDFA',
-    background: '#070D18',
-    backgroundElement: '#121A2A',
-    backgroundSelected: '#1A2A3A',
+    text: '#F1F5F9',
+    background: '#0B1220',
+    backgroundElement: '#1A2332',
+    backgroundSelected: '#243044',
     textSecondary: '#94A3B8',
-    primary: '#22D3EE',
-    accent: '#A3E635',
+    primary: '#2DD4BF',
+    accent: '#F5B042',
   },
 } as const;
 
@@ -43,22 +43,9 @@ export const Fonts = Platform.select({
     mono: 'monospace',
   },
   web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+    sans: "Spline Sans, Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+    serif: "Georgia, 'Times New Roman', serif",
+    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
+    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
   },
 });
-
-export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
-} as const;
-
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;

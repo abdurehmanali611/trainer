@@ -50,7 +50,7 @@ export default function ChatListScreen() {
           <Pressable
             key={t.id}
             onPress={() => router.push(`/chat/${t.id}`)}
-            className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm shadow-black/[0.05] active:bg-accent/40 dark:shadow-black/30">
+            className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm shadow-black/30 active:bg-secondary">
             <Avatar alt={t.name}>
               {t.avatar_url ? <AvatarImage source={{ uri: t.avatar_url }} /> : null}
               <AvatarFallback>

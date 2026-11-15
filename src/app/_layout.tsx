@@ -2,9 +2,9 @@ import '../global.css';
 
 import { PortalHost } from '@rn-primitives/portal';
 import * as SplashScreen from 'expo-splash-screen';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import * as React from 'react';
-import { ActivityIndicator, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Appearance, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { WebAlertHost } from '@/lib/web-alert';
@@ -18,10 +18,24 @@ function RootNavigator() {
   const { status, platform, refreshPlatform } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const colorScheme = useColorScheme();
   const { latest, dismiss } = useInAppNotifications(status === 'signedIn');
   usePushNotifications(status === 'signedIn');
   const [dismissedNotices, setDismissedNotices] = React.useState<string[]>([]);
+  const splashHidden = React.useRef(false);
+
+  // app.json sets userInterfaceStyle: dark; reinforce on native client only
+  // (SSR/web render has no Appearance.setColorScheme).
+  React.useEffect(() => {
+    if (typeof Appearance.setColorScheme === 'function') {
+      Appearance.setColorScheme('dark');
+    }
+  }, []);
+
+  const hideSplash = React.useCallback(() => {
+    if (splashHidden.current) return;
+    splashHidden.current = true;
+    void SplashScreen.hideAsync();
+  }, []);
 
   const inAuthGroup = segments[0] === 'auth';
   const inPlatformLock = segments[0] === 'platform-lock';
@@ -89,22 +103,27 @@ function RootNavigator() {
     }
   }, [status, inAuthGroup, inPlatformLock, segments, router, platform]);
 
+  // Hide splash as soon as auth settles — and always within 2.5s so a hung
+  // bootstrap can never leave users on a blank native splash (purple/navy).
   React.useEffect(() => {
-    if (status !== 'loading') {
-      SplashScreen.hideAsync();
-    }
-  }, [status]);
+    if (status !== 'loading') hideSplash();
+  }, [status, hideSplash]);
+
+  React.useEffect(() => {
+    const failsafe = setTimeout(hideSplash, 2500);
+    return () => clearTimeout(failsafe);
+  }, [hideSplash]);
 
   if (status === 'loading') {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#2DD4BF" />
       </View>
     );
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={DarkTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="auth" />
         <Stack.Screen name="(tabs)" />

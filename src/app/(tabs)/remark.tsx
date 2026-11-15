@@ -36,7 +36,7 @@ function SessionRow({
   onStatus: (session: Session, status: SessionStatus) => void;
 }) {
   return (
-    <View className="gap-2 rounded-2xl border border-border bg-card p-3.5">
+    <View className="gap-2 rounded-2xl border border-border bg-card p-3.5 shadow-md shadow-black/35">
       <View className="flex-row items-center justify-between gap-3">
         <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
           <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">

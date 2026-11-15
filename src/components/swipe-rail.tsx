@@ -55,7 +55,7 @@ export function SwipeRail({
                 className={cn(
                   'h-9 w-9 items-center justify-center rounded-full border active:scale-90',
                   isLit
-                    ? 'border-primary/50 bg-primary/15 shadow-sm shadow-primary/30'
+                    ? 'border-primary/40 bg-primary/15'
                     : 'border-border bg-card dark:bg-card/60'
                 )}>
                 <Icon

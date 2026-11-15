@@ -46,73 +46,42 @@
   --radius-2xl: 28px;
 }
 
-/* Athletic energy — electric cyan + lime on deep navy (shared Trainer OS brand) */
+/*
+  Dark system palette — aligned with hotcol-owner / pharmacy discipline:
+  slate navy surfaces, one teal primary, quiet borders (no neon lime/cyan).
+*/
 :root {
-  --background: hsl(210 45% 97%);
-  --foreground: hsl(222 48% 10%);
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(222 48% 10%);
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(222 48% 10%);
-  --primary: hsl(191 92% 38%);
-  --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(191 55% 94%);
-  --secondary-foreground: hsl(191 70% 22%);
-  --muted: hsl(210 32% 93%);
-  --muted-foreground: hsl(215 16% 42%);
-  --accent: hsl(84 78% 40%);
-  --accent-foreground: hsl(0 0% 100%);
-  --destructive: hsl(350 82% 50%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --success: hsl(152 76% 36%);
-  --success-foreground: hsl(0 0% 100%);
-  --warning: hsl(38 95% 48%);
-  --warning-foreground: hsl(26 83% 12%);
-  --info: hsl(199 92% 45%);
-  --info-foreground: hsl(0 0% 100%);
-  --border: hsl(210 28% 88%);
-  --input: hsl(210 28% 90%);
-  --ring: hsl(191 92% 38%);
-  --chart-1: hsl(191 92% 42%);
-  --chart-2: hsl(84 78% 42%);
-  --chart-3: hsl(38 95% 52%);
-  --chart-4: hsl(152 76% 40%);
-  --chart-5: hsl(199 92% 48%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: hsl(222 48% 6%);
-    --foreground: hsl(190 40% 97%);
-    --card: hsl(222 40% 10%);
-    --card-foreground: hsl(190 40% 97%);
-    --popover: hsl(222 40% 10%);
-    --popover-foreground: hsl(190 40% 97%);
-    --primary: hsl(187 94% 52%);
-    --primary-foreground: hsl(222 48% 8%);
-    --secondary: hsl(210 35% 16%);
-    --secondary-foreground: hsl(190 40% 92%);
-    --muted: hsl(220 32% 14%);
-    --muted-foreground: hsl(210 18% 68%);
-    --accent: hsl(84 85% 52%);
-    --accent-foreground: hsl(100 60% 8%);
-    --destructive: hsl(350 84% 58%);
-    --destructive-foreground: hsl(0 0% 100%);
-    --success: hsl(152 72% 48%);
-    --success-foreground: hsl(0 0% 100%);
-    --warning: hsl(42 96% 56%);
-    --warning-foreground: hsl(26 83% 12%);
-    --info: hsl(199 92% 58%);
-    --info-foreground: hsl(222 48% 8%);
-    --border: hsl(215 28% 18%);
-    --input: hsl(215 28% 20%);
-    --ring: hsl(187 94% 52%);
-    --chart-1: hsl(187 94% 55%);
-    --chart-2: hsl(84 85% 55%);
-    --chart-3: hsl(42 96% 58%);
-    --chart-4: hsl(152 72% 50%);
-    --chart-5: hsl(199 92% 58%);
-  }
+  --background: hsl(222 47% 8%);
+  --foreground: hsl(213 32% 95%);
+  --card: hsl(222 38% 13%);
+  --card-foreground: hsl(213 32% 95%);
+  --popover: hsl(222 38% 13%);
+  --popover-foreground: hsl(213 32% 95%);
+  --primary: hsl(172 66% 50%);
+  --primary-foreground: hsl(222 47% 8%);
+  --secondary: hsl(222 30% 18%);
+  --secondary-foreground: hsl(213 32% 95%);
+  --muted: hsl(222 30% 18%);
+  --muted-foreground: hsl(215 16% 62%);
+  /* accent = hover/select surface (shadcn), not a second brand neon */
+  --accent: hsl(222 30% 20%);
+  --accent-foreground: hsl(213 32% 95%);
+  --destructive: hsl(0 84% 68%);
+  --destructive-foreground: hsl(222 47% 8%);
+  --success: hsl(160 60% 45%);
+  --success-foreground: hsl(222 47% 8%);
+  --warning: hsl(43 96% 56%);
+  --warning-foreground: hsl(222 47% 8%);
+  --info: hsl(172 66% 50%);
+  --info-foreground: hsl(222 47% 8%);
+  --border: hsl(222 25% 21%);
+  --input: hsl(222 25% 21%);
+  --ring: hsl(172 66% 50%);
+  --chart-1: hsl(172 66% 50%);
+  --chart-2: hsl(43 96% 56%);
+  --chart-3: hsl(199 80% 55%);
+  --chart-4: hsl(160 60% 45%);
+  --chart-5: hsl(215 16% 50%);
 }
 
 :root {

@@ -14,6 +14,7 @@ import {
   toneForInvoice,
   toneForMode,
 } from '@/components/screen';
+import { Section, Surface } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { DatePopoverField } from '@/components/ui/calendar';
 import { Icon } from '@/components/ui/icon';
@@ -138,17 +139,17 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const TILE_TONES: Record<string, string> = {
-  success: 'bg-emerald-500/10 text-emerald-600 ring-emerald-500/30 dark:text-emerald-300',
-  warning: 'bg-amber-500/12 text-amber-600 ring-amber-500/30 dark:text-amber-300',
-  danger: 'bg-rose-500/10 text-rose-600 ring-rose-500/30 dark:text-rose-300',
-  info: 'bg-sky-500/10 text-sky-600 ring-sky-500/30 dark:text-sky-300',
+  success: 'bg-success/15 ring-success/30',
+  warning: 'bg-warning/15 ring-warning/30',
+  danger: 'bg-destructive/15 ring-destructive/30',
+  info: 'bg-primary/15 ring-primary/30',
 };
 
 const TILE_ICON_COLORS: Record<string, string> = {
-  success: 'text-emerald-600 dark:text-emerald-300',
-  warning: 'text-amber-600 dark:text-amber-300',
-  danger: 'text-rose-600 dark:text-rose-300',
-  info: 'text-sky-600 dark:text-sky-300',
+  success: 'text-success',
+  warning: 'text-warning',
+  danger: 'text-destructive',
+  info: 'text-primary',
 };
 
 function StatusTile({
@@ -167,7 +168,7 @@ function StatusTile({
   const toneClass = TILE_TONES[tone] ?? TILE_TONES.info;
   const iconColor = TILE_ICON_COLORS[tone] ?? TILE_ICON_COLORS.info;
   return (
-    <View className="w-[48%] gap-1.5 rounded-xl border border-border bg-card p-3 shadow-sm shadow-black/[0.04] dark:shadow-black/30">
+    <Surface className="w-[48%] gap-1.5 p-3">
       <View className="flex-row items-center gap-2">
         <View className={`h-7 w-7 items-center justify-center rounded-lg ring-1 ${toneClass}`}>
           <Icon as={icon} size={14} className={iconColor} />
@@ -184,16 +185,7 @@ function StatusTile({
           {caption}
         </Text>
       ) : null}
-    </View>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View className="bg-card border-border gap-4 rounded-xl border p-4">
-      <Text className="text-base font-semibold">{title}</Text>
-      {children}
-    </View>
+    </Surface>
   );
 }
 
@@ -636,7 +628,7 @@ export default function ClientDetailScreen() {
       </View>
 
       <View className="gap-4">
-        <View className="bg-card border-border gap-2 rounded-xl border p-4">
+        <Surface className="gap-2 p-4">
           <Badge label={access.label} tone={access.tone} />
           <Text variant="muted" className="text-xs">
             {accessState.reason || access.explain}
@@ -688,7 +680,7 @@ export default function ClientDetailScreen() {
               Login OTP: {client.otp}
             </Text>
           ) : null}
-        </View>
+        </Surface>
 
         <View className="gap-2">
           <Text className="text-sm font-semibold">Status</Text>

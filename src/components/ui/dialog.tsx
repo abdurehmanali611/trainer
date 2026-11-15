@@ -185,7 +185,7 @@ function DialogSection({
   return (
     <View
       className={cn(
-        'gap-2.5 rounded-2xl border border-border bg-background/50 p-3.5',
+        'gap-2.5 rounded-xl border border-border bg-secondary p-3.5',
         className
       )}>
       {label ? (

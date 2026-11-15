@@ -410,7 +410,7 @@ export default function ExercisesScreen() {
             <Pressable
               key={exercise.id}
               onPress={() => openEdit(exercise)}
-              className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm shadow-black/[0.05] active:opacity-70 dark:shadow-black/30">
+              className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm shadow-black/30 active:opacity-70">
               <View className="min-w-0 flex-1 gap-1">
                 <View className="flex-row flex-wrap items-center gap-2">
                   <Text className="font-medium" numberOfLines={1}>

@@ -72,7 +72,7 @@ export function ScreenHeader({
   return (
     <View className="mb-5 gap-1.5">
       <View className="flex-row items-center justify-between gap-3">
-        <Text variant="h2" className="flex-1 text-[26px] font-black tracking-tight">
+        <Text variant="h2" className="flex-1 text-[24px] font-semibold tracking-tight">
           {title}
         </Text>
         {right}
@@ -131,11 +131,11 @@ export function Badge({
   className?: string;
 }) {
   const tones: Record<string, string> = {
-    default: 'bg-secondary text-secondary-foreground ring-secondary-foreground/10',
-    success: 'bg-emerald-500/10 text-emerald-700 ring-emerald-600/25 dark:bg-emerald-500/15 dark:text-emerald-300',
-    warning: 'bg-amber-500/15 text-amber-700 ring-amber-600/25 dark:bg-amber-500/15 dark:text-amber-300',
-    danger: 'bg-rose-500/10 text-rose-700 ring-rose-600/25 dark:bg-rose-500/15 dark:text-rose-300',
-    info: 'bg-sky-500/10 text-sky-700 ring-sky-600/25 dark:bg-sky-500/15 dark:text-sky-300',
+    default: 'bg-muted text-muted-foreground ring-border',
+    success: 'bg-success/15 text-success ring-success/30',
+    warning: 'bg-warning/15 text-warning ring-warning/30',
+    danger: 'bg-destructive/15 text-destructive ring-destructive/30',
+    info: 'bg-primary/15 text-primary ring-primary/30',
   };
   return (
     <View className={cn('self-start rounded-full px-2.5 py-1 ring-1 ring-inset', tones[tone], className)}>

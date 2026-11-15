@@ -48,7 +48,7 @@ function TrainerTabBar({ state, descriptors, emitter, navigateToTab, insets }: B
   return (
     <View
       accessibilityRole="tablist"
-      className="flex-row items-stretch justify-around border-t border-cyan-500/15 bg-white/95 pt-2 dark:border-cyan-400/20 dark:bg-[#0B1220]/95"
+      className="flex-row items-stretch justify-around border-t border-border bg-card/95 pt-2"
       style={{
         width: '100%',
         maxWidth: '100%',
@@ -92,7 +92,7 @@ function TrainerTabBar({ state, descriptors, emitter, navigateToTab, insets }: B
             <View
               className={
                 focused
-                  ? 'items-center justify-center rounded-2xl bg-cyan-500/15 px-3.5 py-1.5 dark:bg-cyan-400/20'
+                  ? 'items-center justify-center rounded-lg bg-primary/15 px-3.5 py-1.5'
                   : 'items-center justify-center px-3.5 py-1.5'
               }>
               <Icon as={item.icon} size={22} color={color} />

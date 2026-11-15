@@ -10,12 +10,18 @@
     },
     "preview": {
       "distribution": "internal",
-       "android": {
+      "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://trainer-backend-nu.vercel.app"
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://trainer-backend-nu.vercel.app"
+      }
     }
   },
   "submit": {

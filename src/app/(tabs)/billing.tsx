@@ -3,10 +3,10 @@ import * as React from 'react';
 import { View } from 'react-native';
 
 import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
+import { Section } from '@/components/section';
 import { ClientBillingSection } from '@/components/billing/client-billing';
 import { PaymentInstructionsSection } from '@/components/billing/payment-instructions';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { usePlatformAccess } from '@/hooks/use-platform-access';
@@ -109,11 +109,9 @@ export default function BillingScreen() {
       <View className="mt-5 gap-4">
         <PaymentInstructionsSection />
 
-        <Card className="gap-3 p-4">
-          <View className="flex-row items-center justify-between gap-2">
-            <Text className="text-sm font-semibold">Subscription status</Text>
-            <Badge tone={toneForState(billing.state)} label={platformStateLabel(billing.state)} />
-          </View>
+        <Section
+          title="Subscription status"
+          action={<Badge tone={toneForState(billing.state)} label={platformStateLabel(billing.state)} />}>
           <View className="flex-row items-center justify-between gap-2">
             <Text variant="muted" className="text-sm">
               Setup fee
@@ -160,25 +158,23 @@ export default function BillingScreen() {
               <Text className="text-sm font-medium">{shortDate(billing.window_opens_on)}</Text>
             </View>
           ) : null}
-        </Card>
+        </Section>
 
         {billing.notices.length > 0 ? (
-          <Card className="gap-3 p-4">
-            <Text className="text-sm font-semibold">Notices</Text>
+          <Section title="Notices">
             {billing.notices.map((notice) => (
-              <View key={notice.id} className="gap-1">
+              <View key={notice.id} className="gap-1 rounded-xl border border-border bg-muted/70 p-3">
                 <Text className="text-sm font-semibold">{notice.title}</Text>
                 <Text variant="muted" className="text-sm">
                   {notice.message}
                 </Text>
               </View>
             ))}
-          </Card>
+          </Section>
         ) : null}
 
         {billing.pending_payment ? (
-          <Card className="gap-2 p-4">
-            <Text className="text-sm font-semibold">Pending review</Text>
+          <Section title="Pending review">
             <Text variant="muted" className="text-sm">
               {billing.pending_payment.kind === 'setup' ? 'Setup fee' : 'Quarterly'} ·{' '}
               {billing.pending_payment.amount_etb} ETB via {billing.pending_payment.channel}
@@ -186,7 +182,7 @@ export default function BillingScreen() {
             <Text variant="muted" className="text-xs">
               Ref: {billing.pending_payment.transaction_ref}
             </Text>
-          </Card>
+          </Section>
         ) : null}
 
         {/* Feature 17: the setup/quarterly payment fields live in the Billing
@@ -196,18 +192,9 @@ export default function BillingScreen() {
         {!billing.is_illustration &&
         !billing.pending_payment &&
         (!billing.setup_fee_paid || billing.can_submit_payment) ? (
-          <Card className="gap-3 p-4">
-            <Text className="text-sm font-semibold">
-              {!billing.setup_fee_paid ? 'Pay the setup fee' : 'Pay the quarterly fee'}
-            </Text>
-            <Text variant="muted" className="text-xs">
-              Send{' '}
-              {!billing.setup_fee_paid
-                ? billing.setup_fee_etb
-                : billing.quarterly_fee_etb}{' '}
-              ETB through your payment channel, then submit the transaction ID
-              below. Apex reviews it before access resumes.
-            </Text>
+          <Section
+            title={!billing.setup_fee_paid ? 'Pay the setup fee' : 'Pay the quarterly fee'}
+            subtitle="Send the fee through your payment channel, then submit the transaction ID below. Apex reviews it before access resumes.">
             <View className="flex-row gap-2">
               {(['Telebirr', 'CBE'] as const).map((ch) => (
                 <Button
@@ -229,23 +216,22 @@ export default function BillingScreen() {
               <Text className="text-xs text-destructive">{payError}</Text>
             ) : null}
             {payInfo ? (
-              <Text className="text-xs text-emerald-600 dark:text-emerald-300">{payInfo}</Text>
+              <Text className="text-xs text-success">{payInfo}</Text>
             ) : null}
             <Button disabled={paying} onPress={() => void submitPlatformFee()}>
               <Text>{paying ? 'Submitting…' : 'Submit payment reference'}</Text>
             </Button>
-          </Card>
+          </Section>
         ) : null}
 
         {/* Feature 32: exempt trainers get no payment prompts whatsoever. */}
         {billing.is_illustration ? (
-          <Card className="gap-1 p-4">
-            <Text className="text-sm font-semibold">Exempt account</Text>
+          <Section title="Exempt account">
             <Text variant="muted" className="text-xs">
               This account is illustrative — it is never billed and never sits
               in a payment queue.
             </Text>
-          </Card>
+          </Section>
         ) : null}
 
         {!billing.allowed ? (

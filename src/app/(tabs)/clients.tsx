@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/app-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge, EmptyView, ErrorView, toneForMode } from '@/components/screen';
+import { SurfacePressable } from '@/components/section';
 import { PhoneNumberInput } from '@/components/phone-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -76,9 +77,7 @@ function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () 
   const blocked = state === 'blocked_unpaid' || state === 'blocked_trial_expired';
   const needsPeriod = state === 'blocked_no_period';
   return (
-    <Pressable
-      onPress={onPress}
-      className="bg-card border-border flex-row items-center gap-3 rounded-xl border px-4 py-3 shadow-sm shadow-black/[0.05] active:bg-accent/40 dark:shadow-black/30">
+    <SurfacePressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-3 active:bg-secondary/60">
       <Avatar alt={client.name}>
         <AvatarImage source={{ uri: client.avatar_url }} />
         <AvatarFallback>
@@ -111,7 +110,7 @@ function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () 
         <Icon as={Trash2Icon} size={16} className="text-destructive" />
       </Pressable>
       <Icon as={ChevronRightIcon} className="text-muted-foreground" size={18} />
-    </Pressable>
+    </SurfacePressable>
   );
 }
 

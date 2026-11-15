@@ -5,45 +5,33 @@ import { Pressable, View } from 'react-native';
 
 import { HeroCard } from '@/components/gradient';
 import { Badge, ErrorView, LoadingView, Screen, toneForSession } from '@/components/screen';
+import { Section, StatTile } from '@/components/section';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { clockTime, dayLabel, shortDate, todayISO } from '@/lib/dates';
 import { formatMoney, labelize } from '@/lib/format';
-import { cn } from '@/lib/utils';
 import type { DashboardData, WorkloadData } from '@/lib/types';
 
 interface StatItem {
   label: string;
   value: string;
+  tone?: React.ComponentProps<typeof StatTile>['tone'];
 }
 
-const STAT_TONES: Record<string, string> = {
-  'Total clients': 'bg-cyan-500/15 ring-cyan-500/25 text-cyan-700 dark:text-cyan-300',
-  Paid: 'bg-lime-500/15 ring-lime-500/25 text-lime-700 dark:text-lime-300',
-  Trial: 'bg-sky-500/15 ring-sky-500/25 text-sky-700 dark:text-sky-300',
-  Illustrative: 'bg-slate-500/10 ring-slate-500/20 text-slate-600 dark:text-slate-300',
-  'Payment due': 'bg-amber-500/15 ring-amber-500/30 text-amber-700 dark:text-amber-300',
-  Blocked: 'bg-rose-500/15 ring-rose-500/30 text-rose-700 dark:text-rose-300',
-  Inactive: 'bg-slate-500/10 ring-slate-500/20 text-slate-600 dark:text-slate-300',
-  'Needs period': 'bg-orange-500/15 ring-orange-500/25 text-orange-700 dark:text-orange-300',
-  'Unpaid invoices': 'bg-orange-500/15 ring-orange-500/30 text-orange-700 dark:text-orange-300',
-  'Revenue this month': 'bg-teal-500/15 ring-teal-500/25 text-teal-700 dark:text-teal-300',
+const STAT_TONES: Record<string, React.ComponentProps<typeof StatTile>['tone']> = {
+  'Total clients': 'default',
+  Paid: 'default',
+  Trial: 'default',
+  Illustrative: 'muted',
+  'Payment due': 'warning',
+  Blocked: 'danger',
+  Inactive: 'muted',
+  'Needs period': 'warning',
+  'Unpaid invoices': 'warning',
+  'Revenue this month': 'default',
 };
-
-function StatCard({ label, value }: StatItem) {
-  return (
-    <View
-      className={cn(
-        'flex-1 flex-col gap-1 rounded-2xl p-4 ring-1 ring-inset',
-        STAT_TONES[label] ?? 'bg-card ring-border text-foreground'
-      )}>
-      <Text className="text-2xl font-bold tabular-nums">{value}</Text>
-      <Text className="text-xs font-medium opacity-80">{label}</Text>
-    </View>
-  );
-}
 
 function StatGrid({ stats }: { stats: StatItem[] }) {
   const rows: StatItem[][] = [];
@@ -53,7 +41,12 @@ function StatGrid({ stats }: { stats: StatItem[] }) {
       {rows.map((row, index) => (
         <View key={index} className="flex-row gap-3">
           {row.map((stat) => (
-            <StatCard key={stat.label} label={stat.label} value={stat.value} />
+            <StatTile
+              key={stat.label}
+              label={stat.label}
+              value={stat.value}
+              tone={stat.tone ?? STAT_TONES[stat.label] ?? 'default'}
+            />
           ))}
           {row.length === 1 ? <View className="flex-1" /> : null}
         </View>
@@ -84,18 +77,6 @@ function BarChart({
           <Text className="text-xs font-medium">{formatValue ? formatValue(d.value) : String(d.value)}</Text>
         </View>
       ))}
-    </View>
-  );
-}
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View className="gap-4 rounded-xl border border-cyan-500/10 bg-card p-5 shadow-md shadow-cyan-950/5 dark:border-cyan-400/15 dark:shadow-black/40">
-      <View className="flex-row items-center gap-2">
-        <View className="h-2 w-2 rounded-full bg-lime-500" />
-        <Text className="text-base font-extrabold tracking-tight">{title}</Text>
-      </View>
-      {children}
     </View>
   );
 }
@@ -166,10 +147,10 @@ export default function DashboardScreen() {
             <Text className="text-xs font-semibold uppercase tracking-wider text-white/70">
               {dayLabel(todayISO())}
             </Text>
-            <Text className="mt-1 text-2xl font-black tracking-tight text-white">
+            <Text className="mt-1 text-2xl font-semibold tracking-tight text-white">
               {greeting}, {name.split(' ')[0]}
             </Text>
-            <Text className="mt-1 text-sm font-medium text-cyan-50/90">
+            <Text className="mt-1 text-sm text-white/75">
               Here&apos;s your coaching day at a glance.
             </Text>
           </View>
@@ -204,12 +185,12 @@ export default function DashboardScreen() {
       ) : null}
 
       <View className="gap-4">
-        <SectionCard title="Overview">
+        <Section title="Overview">
           <StatGrid stats={stats} />
-        </SectionCard>
+        </Section>
 
         {workload ? (
-          <SectionCard title="Sessions this week">
+          <Section title="Sessions this week">
             <BarChart
               data={workload.days.map((d) => ({ label: d.label, value: d.sessions, highlight: d.is_today }))}
             />
@@ -224,22 +205,22 @@ export default function DashboardScreen() {
                 {workload.totals.avg_sessions_per_day} per day avg
               </Text>
             </View>
-          </SectionCard>
+          </Section>
         ) : null}
 
         {dashboard && dashboard.revenue_by_channel.length > 0 ? (
-          <SectionCard title="Revenue by channel">
+          <Section title="Revenue by channel">
             <BarChart
               data={dashboard.revenue_by_channel.map((c) => ({ label: labelize(c.channel), value: c.total }))}
               formatValue={formatMoney}
             />
-          </SectionCard>
+          </Section>
         ) : null}
 
         {retention ? (
-          <SectionCard title="Retention">
-            <View className="flex-row items-center gap-3">
-              <Text className="text-3xl font-semibold">{retentionLabel}</Text>
+          <Section title="Retention">
+            <View className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary p-3.5">
+              <Text className="text-3xl font-semibold text-foreground">{retentionLabel}</Text>
               <View className="gap-0.5">
                 <Text variant="muted" className="text-xs">
                   {retention.started} started · {retention.lost} lost
@@ -249,17 +230,17 @@ export default function DashboardScreen() {
                 </Text>
               </View>
             </View>
-          </SectionCard>
+          </Section>
         ) : null}
 
-        <SectionCard title="Today's sessions">
+        <Section title="Today's sessions">
           {dashboard && dashboard.today_sessions.length > 0 ? (
             <View className="gap-2">
               {dashboard.today_sessions.map((s) => (
                 <Pressable
                   key={s.id}
                   onPress={() => router.push(`/client/${s.client_id}`)}
-                  className="flex-row items-center gap-3 rounded-xl bg-muted/60 px-3 py-3 active:bg-accent/50">
+                  className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary px-3 py-3 active:opacity-80">
                   <View className="w-16">
                     <Text className="text-sm font-medium">{clockTime(s.time)}</Text>
                   </View>
@@ -278,16 +259,16 @@ export default function DashboardScreen() {
           ) : (
             <Text variant="muted">No sessions scheduled today.</Text>
           )}
-        </SectionCard>
+        </Section>
 
-        <SectionCard title={`Inactive over ${dashboard?.inactive_threshold_days ?? 7} days`}>
+        <Section title={`Inactive over ${dashboard?.inactive_threshold_days ?? 7} days`}>
           {dashboard && dashboard.inactive_clients.length > 0 ? (
             <View className="gap-2">
               {dashboard.inactive_clients.map((c) => (
                 <Pressable
                   key={c.id}
                   onPress={() => router.push(`/client/${c.id}`)}
-                  className="flex-row items-center gap-3 rounded-xl bg-muted/60 px-3 py-3 active:bg-accent/50">
+                  className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary px-3 py-3 active:opacity-80">
                   <View className="flex-1 gap-0.5">
                     <Text className="text-sm" numberOfLines={1}>
                       {c.name}
@@ -303,7 +284,7 @@ export default function DashboardScreen() {
           ) : (
             <Text variant="muted">Everyone has been active recently.</Text>
           )}
-        </SectionCard>
+        </Section>
       </View>
     </Screen>
   );

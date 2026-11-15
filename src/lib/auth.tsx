@@ -57,20 +57,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   React.useEffect(() => {
+    let cancelled = false;
+    const BOOT_MS = 10_000;
+
     (async () => {
-      const tokens = await loadTokens();
-      if (tokens.access) {
-        try {
-          const me = await api<Trainer>('auth/me/');
-          const platform = await loadPlatform();
-          setState({ status: 'signedIn', trainer: me, platform });
-          return;
-        } catch {
-          await clearTokens();
+      // Hard ceiling so a hung network never leaves the app on the native splash.
+      const boot = (async () => {
+        const tokens = await loadTokens();
+        if (tokens.access) {
+          try {
+            const me = await api<Trainer>('auth/me/');
+            const platform = await loadPlatform();
+            return { status: 'signedIn' as const, trainer: me, platform };
+          } catch {
+            await clearTokens();
+          }
         }
+        return { status: 'signedOut' as const, trainer: null, platform: null };
+      })();
+
+      const timeout = new Promise<AuthState>((resolve) => {
+        setTimeout(
+          () => resolve({ status: 'signedOut', trainer: null, platform: null }),
+          BOOT_MS
+        );
+      });
+
+      try {
+        const next = await Promise.race([boot, timeout]);
+        if (!cancelled) setState(next);
+      } catch {
+        if (!cancelled) setState({ status: 'signedOut', trainer: null, platform: null });
       }
-      setState({ status: 'signedOut', trainer: null, platform: null });
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadPlatform]);
 
   const signIn = React.useCallback(async (username: string, password: string) => {
