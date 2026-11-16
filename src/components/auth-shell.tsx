@@ -33,7 +33,11 @@ export function AuthShell({
     <Gradient colors={deepGradient} style={{ flex: 1 }}>
       <View className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-primary/15" />
       <View className="absolute -bottom-28 -left-16 h-80 w-80 rounded-full bg-black/25" />
-      <SafeAreaView className="flex-1">
+      {/* NativeWind's polyfill does NOT wrap SafeAreaView on native (it's a
+          native component that drops className), so className="flex-1" was
+          silently ignored on device → this subtree collapsed to height 0 and
+          the screen rendered as gradient + circles only. Use style instead. */}
+      <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
           className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

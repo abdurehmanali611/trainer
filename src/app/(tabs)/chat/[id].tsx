@@ -220,7 +220,14 @@ export default function ConversationScreen() {
         <View className="flex-row gap-2 border-t border-border px-3 py-2">
           {attachments.map((uri) => (
             <View key={uri}>
-              <Image source={{ uri }} contentFit="cover" className="h-14 w-14 rounded-md" />
+              {/* className dims are dropped on native (expo-image is outside
+                  NativeWind's wrapped set) — keep style as the source of truth. */}
+              <Image
+                source={{ uri }}
+                contentFit="cover"
+                className="h-14 w-14 rounded-md"
+                style={{ width: 56, height: 56, borderRadius: 14 }}
+              />
               <Pressable
                 onPress={() => setAttachments((prev) => prev.filter((u) => u !== uri))}
                 className="absolute -right-1.5 -top-1.5 rounded-full bg-foreground p-0.5">
@@ -297,7 +304,12 @@ function MessageBubble({ message, onOpenImage }: { message: Message; onOpenImage
           <View className="flex-row flex-wrap gap-1.5">
             {message.media_urls.map((url) => (
               <Pressable key={url} onPress={() => onOpenImage(url)}>
-                <Image source={{ uri: url }} contentFit="cover" className="h-28 w-28 rounded-xl" />
+                <Image
+                  source={{ uri: url }}
+                  contentFit="cover"
+                  className="h-28 w-28 rounded-xl"
+                  style={{ width: 112, height: 112, borderRadius: 22 }}
+                />
               </Pressable>
             ))}
             {message.content ? (
