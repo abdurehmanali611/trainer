@@ -7,6 +7,7 @@ import { Badge, EmptyView, ErrorView, LoadingView, Screen } from '@/components/s
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogSection,
   DialogDescription,
@@ -277,19 +278,21 @@ export default function PlansScreen() {
             <DialogTitle>New {createTitle} plan</DialogTitle>
             <DialogDescription>Give the plan a name. You can edit it later.</DialogDescription>
           </DialogHeader>
-          <DialogSection icon={NotebookPenIcon} label="Plan details" className="gap-3">
-            <Input
-              placeholder="Plan name"
-              value={newName}
-              onChangeText={setNewName}
-              autoCapitalize="words"
-            />
-            <Textarea
-              placeholder="What is this plan about? Goals, focus, notes… (optional)"
-              value={newDesc}
-              onChangeText={setNewDesc}
-            />
-          </DialogSection>
+          <DialogBody>
+            <DialogSection icon={NotebookPenIcon} label="Plan details" className="gap-3">
+              <Input
+                placeholder="Plan name"
+                value={newName}
+                onChangeText={setNewName}
+                autoCapitalize="words"
+              />
+              <Textarea
+                placeholder="What is this plan about? Goals, focus, notes… (optional)"
+                value={newDesc}
+                onChangeText={setNewDesc}
+              />
+            </DialogSection>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onPress={() => setCreateOpen(false)}>
               <Text>Cancel</Text>

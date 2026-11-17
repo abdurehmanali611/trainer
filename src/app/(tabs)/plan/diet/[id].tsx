@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -601,20 +601,22 @@ export default function DietPlanScreen() {
             <DialogTitle>Add meal</DialogTitle>
             <DialogDescription>Give the meal a name and an optional time.</DialogDescription>
           </DialogHeader>
-          <DialogSection icon={UtensilsIcon} label="Meal" className="gap-3">
-            <Input
-              placeholder="Meal name"
-              value={mealDraft.name}
-              onChangeText={(v) => setMealDraft((d) => ({ ...d, name: v }))}
-              autoCapitalize="words"
-            />
-            <Input
-              placeholder="Time (HH:MM)"
-              value={mealDraft.time}
-              onChangeText={(v) => setMealDraft((d) => ({ ...d, time: v }))}
-              autoCapitalize="none"
-            />
-          </DialogSection>
+          <DialogBody>
+            <DialogSection icon={UtensilsIcon} label="Meal" className="gap-3">
+              <Input
+                placeholder="Meal name"
+                value={mealDraft.name}
+                onChangeText={(v) => setMealDraft((d) => ({ ...d, name: v }))}
+                autoCapitalize="words"
+              />
+              <Input
+                placeholder="Time (HH:MM)"
+                value={mealDraft.time}
+                onChangeText={(v) => setMealDraft((d) => ({ ...d, time: v }))}
+                autoCapitalize="none"
+              />
+            </DialogSection>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onPress={() => setAddMealOpen(false)}>
               <Text>Cancel</Text>
@@ -697,16 +699,19 @@ export default function DietPlanScreen() {
             <DialogTitle>Assign to client</DialogTitle>
             <DialogDescription>A copy of this template is created for the client.</DialogDescription>
           </DialogHeader>
-          <Select value={assignClient} onValueChange={setAssignClient}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Pick a client" />
-            </SelectTrigger>
-            <SelectContent>
-              {clients.map((client) => (
-                <SelectItem key={client.id} value={String(client.id)} label={client.name} />
-              ))}
-            </SelectContent>
-          </Select>
+          <Combobox
+            value={assignClient?.value ?? ''}
+            onValueChange={(value) =>
+              setAssignClient({
+                value,
+                label: clients.find((c) => String(c.id) === value)?.name ?? '',
+              })
+            }
+            options={clients.map((client) => ({ value: String(client.id), label: client.name }))}
+            placeholder="Pick a client"
+            searchPlaceholder="Search clients…"
+            align="left"
+          />
           <DialogFooter>
             <Button variant="outline" onPress={() => setAssignOpen(false)}>
               <Text>Cancel</Text>

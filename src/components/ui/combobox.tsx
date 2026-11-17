@@ -1,11 +1,13 @@
 import { CheckIcon, ChevronDownIcon, SearchIcon } from 'lucide-react-native';
-import { Portal } from '@rn-primitives/portal';
 import * as React from 'react';
 import {
+  Modal,
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
   type StyleProp,
   type ViewStyle,
@@ -75,7 +77,12 @@ export function Combobox(props: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const triggerRef = React.useRef<unknown>(null);
-  const portalName = `combobox-${React.useId()}`;
+  const [anchor, setAnchor] = React.useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   const selectedLabels = options
     .filter((option) => selectedValues.includes(option.value))
@@ -113,8 +120,21 @@ export function Combobox(props: ComboboxProps) {
         scrollIntoView?: (options?: { block?: 'nearest' | 'start' | 'center' | 'end' }) => void;
       } | null;
       node?.scrollIntoView?.({ block: 'nearest' });
+      setOpen(true);
+      return;
     }
-    setOpen(true);
+    const node = triggerRef.current as {
+      measureInWindow?: (cb: (x: number, y: number, w: number, h: number) => void) => void;
+    } | null;
+    if (!node?.measureInWindow) {
+      setAnchor({ x: 12, y: 120, width: 260, height: 44 });
+      setOpen(true);
+      return;
+    }
+    node.measureInWindow((x, y, width, height) => {
+      setAnchor({ x, y, width, height });
+      setOpen(true);
+    });
   }
 
   function choose(option: ComboboxOption) {
@@ -129,28 +149,46 @@ export function Combobox(props: ComboboxProps) {
     setOpen(false);
   }
 
-  const panelStyle: StyleProp<ViewStyle> =
-    Platform.OS === 'web'
-      ? ({
-          position: 'absolute',
-          top: '100%',
-          marginTop: 6,
-          ...(align === 'right' ? { right: 0 } : { left: 0 }),
-          minWidth: 240,
-          maxWidth: '90vw',
-          zIndex: 9999,
-        } as unknown as ViewStyle)
-      : {
-          position: 'absolute',
-          top: 48,
-          ...(align === 'right' ? { right: 0 } : { left: 0 }),
-          width: 260,
-          zIndex: 9999,
-        };
+  const isWeb = Platform.OS === 'web';
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const PANEL_MAX_HEIGHT = 300;
+
+  // Native: where the trigger sits in the window, measured when opening.
+  const nativePanelStyle: StyleProp<ViewStyle> | null = (() => {
+    if (isWeb || !anchor) return null;
+    const width = Math.min(Math.max(anchor.width, 240), windowWidth - 24);
+    const preferred = align === 'right' ? anchor.x + anchor.width - width : anchor.x;
+    const left = Math.min(Math.max(12, preferred), windowWidth - width - 12);
+    const spaceBelow = windowHeight - (anchor.y + anchor.height) - 12;
+    const spaceAbove = anchor.y - 12;
+    const openAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
+    const maxHeight = Math.min(PANEL_MAX_HEIGHT, Math.max(120, openAbove ? spaceAbove : spaceBelow));
+    return {
+      position: 'absolute',
+      left,
+      width,
+      maxHeight,
+      ...(openAbove
+        ? { bottom: windowHeight - anchor.y + 6 }
+        : { top: anchor.y + anchor.height + 6 }),
+    };
+  })();
+
+  const panelStyle: StyleProp<ViewStyle> = isWeb
+    ? ({
+        position: 'absolute',
+        top: '100%',
+        marginTop: 6,
+        ...(align === 'right' ? { right: 0 } : { left: 0 }),
+        minWidth: 240,
+        maxWidth: '90vw',
+        zIndex: 9999,
+      } as unknown as ViewStyle)
+    : nativePanelStyle;
 
   const panelContent = (
     <>
-      {Platform.OS === 'web' ? (
+      {isWeb ? (
         <Pressable
           onPress={() => setOpen(false)}
           pointerEvents="auto"
@@ -236,8 +274,22 @@ export function Combobox(props: ComboboxProps) {
   // matter its zIndex. Rendering inside the dialog's tree also inherits
   // `pointer-events: auto` (Radix sets `pointer-events: none` on body while a
   // dialog is open) and keeps the search input inside the dialog's focus scope.
-  const panel =
-    open ? (Platform.OS === 'web' ? panelContent : <Portal name={portalName}>{panelContent}</Portal>) : null;
+  // On native the panel lives in a transparent Modal: it sits above any open
+  // dialog, is positioned from the trigger's window coordinates, and a tap on
+  // the backdrop (or the Android back button) dismisses it.
+  const panel = !open ? null : isWeb ? (
+    panelContent
+  ) : (
+    <Modal
+      transparent
+      visible
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={() => setOpen(false)}>
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => setOpen(false)} />
+      {nativePanelStyle ? panelContent : null}
+    </Modal>
+  );
 
   return (
     <View

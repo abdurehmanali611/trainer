@@ -525,14 +525,16 @@ export default function WorkoutPlanScreen() {
             <DialogTitle>Add day</DialogTitle>
             <DialogDescription>{'Name the training day, e.g. "Push" or "Day 1".'}</DialogDescription>
           </DialogHeader>
-          <DialogSection icon={CalendarDaysIcon} label="Training day">
-            <Input
-              placeholder="Day name"
-              value={dayName}
-              onChangeText={setDayName}
-              autoCapitalize="words"
-            />
-          </DialogSection>
+          <DialogBody>
+            <DialogSection icon={CalendarDaysIcon} label="Training day">
+              <Input
+                placeholder="Day name"
+                value={dayName}
+                onChangeText={setDayName}
+                autoCapitalize="words"
+              />
+            </DialogSection>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onPress={() => setAddDayOpen(false)}>
               <Text>Cancel</Text>
