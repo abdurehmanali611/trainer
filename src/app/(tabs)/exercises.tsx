@@ -452,7 +452,11 @@ export default function ExercisesScreen() {
           if (next) setOpen(true);
           else void closeDialog();
         }}>
-        <DialogContent className="w-[42rem] max-w-[calc(100vw-2rem)]">
+        {/* w-[42rem] rendered 672px wide on phones (calc() box values are
+            dropped by NativeWind's native compiler, leaving the fixed width
+            uncapped) → form fields drew off-screen. md: widens only on
+            tablets/desktop; phone uses the base w-full capped by the overlay. */}
+        <DialogContent className="md:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingId == null ? 'New exercise' : 'Edit exercise'}</DialogTitle>
             <DialogDescription>

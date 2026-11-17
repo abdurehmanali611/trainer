@@ -389,7 +389,11 @@ export default function ClientsScreen() {
       <AppHeader />
       <View className="flex-row items-end justify-center gap-2">
         <Input
-          className="h-11 w-64 rounded-xl"
+          // w-64 (256px) + the w-44 filter column (176px) + gap overflowed the
+          // ~320px phone content width by ~120px → search bar drew off-screen.
+          // flex-1 shrinks to whatever space remains; max-w-64 keeps the
+          // original 256px cap on tablets/desktop.
+          className="h-11 min-w-0 max-w-64 flex-1 rounded-xl"
           placeholder="Search name, phone or email…"
           value={query}
           onChangeText={setQuery}

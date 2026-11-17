@@ -877,7 +877,11 @@ export default function ScheduleScreen() {
         onOpenChange={(open) => {
           setAddOpen(open);
         }}>
-        <DialogContent className="w-2xl max-w-[calc(100vw-2rem)]">
+        {/* w-2xl/max-w-calc rendered 672px wide on phones (calc() box values
+            are dropped by NativeWind's native compiler, leaving w-2xl
+            uncapped) → fields drew off-screen. md: only widens on tablets and
+            up; phone falls back to the base w-full, which the overlay insets. */}
+        <DialogContent className="md:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add session</DialogTitle>
             <DialogDescription>Schedule a new session with a client.</DialogDescription>
