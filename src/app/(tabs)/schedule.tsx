@@ -82,6 +82,22 @@ function sessionSpanMinutes(draft: {
   return Math.round((end - start) / 60000);
 }
 
+/** If the end is not after the start, push the end to one hour after the start. */
+function withValidEnd<
+  T extends { startDate: string; startTime: string; endDate: string; endTime: string },
+>(draft: T): T {
+  if (sessionSpanMinutes(draft) > 0) return draft;
+  const start = new Date(`${draft.startDate}T${draft.startTime}:00`);
+  if (Number.isNaN(start.getTime())) return draft;
+  const end = new Date(start.getTime() + 60 * 60000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return {
+    ...draft,
+    endDate: `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`,
+    endTime: `${pad(end.getHours())}:${pad(end.getMinutes())}`,
+  };
+}
+
 function SessionRow({ session, onPress }: { session: Session; onPress: () => void }) {
   return (
     <Pressable
@@ -192,25 +208,37 @@ export default function ScheduleScreen() {
   const [attachableDiets, setAttachableDiets] = React.useState<{ id: number; name: string }[]>([]);
   const [adding, setAdding] = React.useState(false);
 
-  // Load the attachable plan catalogue once, the first time the add dialog opens.
+  // Refresh the attachable plan catalogue every time the add dialog opens, so
+  // plans created or deleted since the last open are reflected immediately.
   React.useEffect(() => {
-    if (!addOpen || attachableWorkouts.length > 0 || attachableDiets.length > 0) return;
+    if (!addOpen) return;
+    let cancelled = false;
     Promise.allSettled([
-      api<Paginated<WorkoutPlan>>('workout-plans/'),
-      api<Paginated<DietPlan>>('diet-plans/'),
+      api<Paginated<WorkoutPlan>>('workout-plans/', { query: { page_size: 200 } }),
+      api<Paginated<DietPlan>>('diet-plans/', { query: { page_size: 200 } }),
     ]).then(([workouts, diets]) => {
+      if (cancelled) return;
       if (workouts.status === 'fulfilled') {
-        setAttachableWorkouts(
-          (workouts.value.results ?? []).map((plan) => ({ id: plan.id, name: plan.name }))
-        );
+        const list = (workouts.value.results ?? []).map((plan) => ({ id: plan.id, name: plan.name }));
+        setAttachableWorkouts(list);
+        setDraft((d) => ({
+          ...d,
+          workoutIds: d.workoutIds.filter((id) => list.some((p) => String(p.id) === id)),
+        }));
       }
       if (diets.status === 'fulfilled') {
-        setAttachableDiets(
-          (diets.value.results ?? []).map((plan) => ({ id: plan.id, name: plan.name }))
-        );
+        const list = (diets.value.results ?? []).map((plan) => ({ id: plan.id, name: plan.name }));
+        setAttachableDiets(list);
+        setDraft((d) => ({
+          ...d,
+          dietIds: d.dietIds.filter((id) => list.some((p) => String(p.id) === id)),
+        }));
       }
     });
-  }, [addOpen, attachableWorkouts.length, attachableDiets.length]);
+    return () => {
+      cancelled = true;
+    };
+  }, [addOpen]);
   const [decideTarget, setDecideTarget] = React.useState<DecideTarget | null>(null);
   const [decideNote, setDecideNote] = React.useState('');
   const [deciding, setDeciding] = React.useState(false);
@@ -821,20 +849,18 @@ export default function ScheduleScreen() {
           {edit ? (
             <DialogBody contentContainerClassName="gap-3">
               <DialogSection icon={CalendarPlusIcon} label="Session details">
-              <View className="flex-row gap-3">
-                <Input
-                  className="flex-1"
+              <View className="gap-3 web:flex-row">
+                <DatePopoverField
+                  label="Date"
                   value={edit.date}
-                  onChangeText={(v) => setEdit({ ...edit, date: v })}
-                  placeholder="YYYY-MM-DD"
-                  autoCapitalize="none"
-                />
-                <Input
+                  onChange={(iso) => setEdit({ ...edit, date: iso || edit.date })}
                   className="flex-1"
+                />
+                <TimePopoverField
+                  label="Time"
                   value={edit.time}
-                  onChangeText={(v) => setEdit({ ...edit, time: v })}
-                  placeholder="HH:MM"
-                  autoCapitalize="none"
+                  onChange={(time) => setEdit({ ...edit, time })}
+                  className="flex-1"
                 />
               </View>
               <View className="flex-row items-center gap-3">
@@ -913,22 +939,25 @@ export default function ScheduleScreen() {
                     label="Start date"
                     value={draft.startDate}
                     onChange={(iso) =>
-                      setDraft((d) => ({ ...d, startDate: iso, endDate: iso }))
+                      setDraft((d) =>
+                        withValidEnd({ ...d, startDate: iso || d.startDate, endDate: iso || d.endDate })
+                      )
                     }
                     className="flex-1"
                   />
                   <TimePopoverField
                     label="Start time"
                     value={draft.startTime}
-                    onChange={(time) => setDraft((d) => ({ ...d, startTime: time }))}
+                    onChange={(time) => setDraft((d) => withValidEnd({ ...d, startTime: time }))}
                     className="flex-1"
                   />
                 </View>
                 <View className="gap-3 web:flex-row">
                   <DatePopoverField
                     label="End date"
+                    minDate={draft.startDate}
                     value={draft.endDate}
-                    onChange={(iso) => setDraft((d) => ({ ...d, endDate: iso }))}
+                    onChange={(iso) => setDraft((d) => ({ ...d, endDate: iso || d.endDate }))}
                     className="flex-1"
                   />
                   <TimePopoverField
@@ -1060,9 +1089,10 @@ export default function ScheduleScreen() {
                   <Text variant="muted" className="text-xs font-medium">
                     Trainer conflict-free slot
                   </Text>
-                  <View className="flex-row gap-3">
+                  <View className="gap-3 web:flex-row">
                     <DatePopoverField
                       label="New date"
+                      minDate={todayISO()}
                       value={decideNewDate}
                       onChange={setDecideNewDate}
                       className="flex-1"

@@ -3,10 +3,10 @@ import {
   AppleIcon,
   ArrowDownIcon,
   ArrowUpIcon,
+  ClockIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
-  UserPlusIcon,
   UtensilsIcon,
 } from 'lucide-react-native';
 import * as React from 'react';
@@ -25,14 +25,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
+import { TimeField } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { Combobox } from '@/components/ui/combobox';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/api';
+import { clockTime } from '@/lib/dates';
 import { cn } from '@/lib/utils';
-import type { Client, DietPlan, Meal, Paginated } from '@/lib/types';
-
-type Option = { value: string; label: string };
+import type { DietPlan, Meal } from '@/lib/types';
 
 type FormState = {
   name: string;
@@ -99,11 +98,9 @@ export default function DietPlanScreen() {
   const [mealDraft, setMealDraft] = React.useState({ name: '', time: '' });
 
   const [itemConfig, setItemConfig] = React.useState<ItemConfig | null>(null);
-
-  const [assignOpen, setAssignOpen] = React.useState(false);
-  const [assignClient, setAssignClient] = React.useState<Option | undefined>(undefined);
-  const [clients, setClients] = React.useState<Client[]>([]);
-  const [assigning, setAssigning] = React.useState(false);
+  const [mealTimeEdit, setMealTimeEdit] = React.useState<{ mealIndex: number; time: string } | null>(
+    null
+  );
 
   const load = React.useCallback(
     async (initial?: boolean) => {
@@ -135,12 +132,6 @@ export default function DietPlanScreen() {
   React.useEffect(() => {
     void load(true);
   }, [load]);
-
-  React.useEffect(() => {
-    api<Paginated<Client>>('clients/', { query: { page_size: 200 } })
-      .then((res) => setClients(res.results))
-      .catch(() => setClients([]));
-  }, []);
 
   function updateMeals(updater: (meals: Meal[]) => Meal[]) {
     setPlan((prev) => (prev ? { ...prev, meals: updater(prev.meals) } : prev));
@@ -305,24 +296,6 @@ export default function DietPlanScreen() {
     setItemConfig(null);
   }
 
-  async function assignToClient() {
-    if (!plan || !assignClient) return;
-    setAssigning(true);
-    try {
-      const created = await api<DietPlan>(`diet-plans/${plan.id}/assign/`, {
-        method: 'POST',
-        body: { client_id: Number(assignClient.value) },
-      });
-      setAssignOpen(false);
-      setAssignClient(undefined);
-      router.replace(`/plan/diet/${created.id}`);
-    } catch (e) {
-      Alert.alert('Could not assign', e instanceof Error ? e.message : 'Something went wrong.');
-    } finally {
-      setAssigning(false);
-    }
-  }
-
   async function saveAsTemplate() {
     if (!plan) return;
     try {
@@ -400,16 +373,11 @@ export default function DietPlanScreen() {
               autoCapitalize="words"
             />
             <View className="flex-row flex-wrap gap-2">
-              {plan.is_template ? (
-                <Button variant="outline" size="sm" onPress={() => setAssignOpen(true)}>
-                  <Icon as={UserPlusIcon} size={16} />
-                  <Text>Assign to client</Text>
-                </Button>
-              ) : (
+              {!plan.is_template ? (
                 <Button variant="outline" size="sm" onPress={() => void saveAsTemplate()}>
                   <Text>Save as template</Text>
                 </Button>
-              )}
+              ) : null}
               <Button variant="destructive" size="sm" onPress={confirmDeletePlan}>
                 <Icon as={Trash2Icon} size={16} />
                 <Text>Delete</Text>
@@ -493,17 +461,17 @@ export default function DietPlanScreen() {
                       }
                       autoCapitalize="words"
                     />
-                    <Input
-                      className="w-24"
-                      value={meal.time}
-                      onChangeText={(v) =>
-                        updateMeals((meals) =>
-                          meals.map((m, i) => (i === mealIndex ? { ...m, time: v } : m))
-                        )
-                      }
-                      placeholder="HH:MM"
-                      autoCapitalize="none"
-                    />
+                    <Pressable
+                      onPress={() => setMealTimeEdit({ mealIndex, time: meal.time })}
+                      accessibilityRole="button"
+                      className="h-11 w-24 flex-row items-center justify-center gap-1.5 rounded-xl border border-input bg-card px-2 active:opacity-70">
+                      <Icon as={ClockIcon} size={14} className="text-muted-foreground" />
+                      <Text
+                        numberOfLines={1}
+                        className={cn('text-xs', meal.time ? 'text-foreground' : 'text-muted-foreground')}>
+                        {meal.time ? clockTime(meal.time) : 'Time'}
+                      </Text>
+                    </Pressable>
                     <Pressable hitSlop={8} onPress={() => deleteMeal(mealIndex)}>
                       <Icon as={Trash2Icon} size={18} className="text-destructive" />
                     </Pressable>
@@ -609,11 +577,11 @@ export default function DietPlanScreen() {
                 onChangeText={(v) => setMealDraft((d) => ({ ...d, name: v }))}
                 autoCapitalize="words"
               />
-              <Input
-                placeholder="Time (HH:MM)"
+              <TimeField
                 value={mealDraft.time}
-                onChangeText={(v) => setMealDraft((d) => ({ ...d, time: v }))}
-                autoCapitalize="none"
+                onChange={(time) => setMealDraft((d) => ({ ...d, time }))}
+                placeholder="Time (optional)"
+                clearable
               />
             </DialogSection>
           </DialogBody>
@@ -623,6 +591,47 @@ export default function DietPlanScreen() {
             </Button>
             <Button onPress={addMeal}>
               <Text>Add meal</Text>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={mealTimeEdit !== null}
+        onOpenChange={(open) => {
+          if (!open) setMealTimeEdit(null);
+        }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Meal time</DialogTitle>
+            <DialogDescription>
+              {mealTimeEdit ? (plan.meals[mealTimeEdit.mealIndex]?.name ?? 'Meal') : ''}
+            </DialogDescription>
+          </DialogHeader>
+          {mealTimeEdit ? (
+            <DialogBody>
+              <DialogSection icon={ClockIcon} label="Time">
+                <TimeField
+                  value={mealTimeEdit.time}
+                  onChange={(time) => setMealTimeEdit({ ...mealTimeEdit, time })}
+                  placeholder="No time set"
+                  clearable
+                />
+              </DialogSection>
+            </DialogBody>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onPress={() => setMealTimeEdit(null)}>
+              <Text>Cancel</Text>
+            </Button>
+            <Button
+              onPress={() => {
+                if (!mealTimeEdit) return;
+                const { mealIndex, time } = mealTimeEdit;
+                updateMeals((meals) => meals.map((m, i) => (i === mealIndex ? { ...m, time } : m)));
+                setMealTimeEdit(null);
+              }}>
+              <Text>Save</Text>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -683,41 +692,6 @@ export default function DietPlanScreen() {
             </Button>
             <Button onPress={applyItem}>
               <Text>{itemConfig?.itemIndex === null ? 'Add' : 'Save'}</Text>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={assignOpen}
-        onOpenChange={(open) => {
-          setAssignOpen(open);
-          if (!open) setAssignClient(undefined);
-        }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign to client</DialogTitle>
-            <DialogDescription>A copy of this template is created for the client.</DialogDescription>
-          </DialogHeader>
-          <Combobox
-            value={assignClient?.value ?? ''}
-            onValueChange={(value) =>
-              setAssignClient({
-                value,
-                label: clients.find((c) => String(c.id) === value)?.name ?? '',
-              })
-            }
-            options={clients.map((client) => ({ value: String(client.id), label: client.name }))}
-            placeholder="Pick a client"
-            searchPlaceholder="Search clients…"
-            align="left"
-          />
-          <DialogFooter>
-            <Button variant="outline" onPress={() => setAssignOpen(false)}>
-              <Text>Cancel</Text>
-            </Button>
-            <Button disabled={!assignClient || assigning} onPress={() => void assignToClient()}>
-              <Text>{assigning ? 'Assigning…' : 'Assign'}</Text>
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -110,7 +110,7 @@ function formFromClient(client: Client): ClientForm {
     phone: client.phone,
     email: client.email,
     mode: { value: client.mode, label: labelize(client.mode) },
-    goals: client.goals.join(', '),
+    goals: (client.goals ?? []).join(', '),
     medical_history: client.medical_history ?? '',
     emergency_name: emergencyName,
     emergency_phone: emergencyPhone,
@@ -261,7 +261,7 @@ function InvoiceCard({
             : `Due date ${shortDate(invoice.due_date)}`}
         {invoice.paid_at ? ` · paid ${shortDate(invoice.paid_at)}` : ''}
       </Text>
-      {invoice.payments.map((p) => (
+      {(invoice.payments ?? []).map((p) => (
         <PaymentRow key={p.id} payment={p} busy={busy} onApprove={onApprove} onReject={onReject} />
       ))}
       {invoice.status === 'pending' || invoice.status === 'overdue' ? (
@@ -460,7 +460,11 @@ export default function ClientDetailScreen() {
 
   async function addPeriod() {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(periodStart) || !/^\d{4}-\d{2}-\d{2}$/.test(periodEnd)) {
-      Alert.alert('Invalid dates', 'Use YYYY-MM-DD format for start and end dates.');
+      Alert.alert('Invalid dates', 'Pick both a start and an end date.');
+      return;
+    }
+    if (periodEnd < periodStart) {
+      Alert.alert('Invalid dates', 'The end date must be on or after the start date.');
       return;
     }
     // Feature 8: paid periods must be > 0 (trial amounts are forced to 0 and
@@ -508,7 +512,7 @@ export default function ClientDetailScreen() {
   }
 
   async function decidePayment(paymentId: number, approve: boolean) {
-    const payment = invoices.flatMap((inv) => inv.payments).find((p) => p.id === paymentId);
+    const payment = invoices.flatMap((inv) => inv.payments ?? []).find((p) => p.id === paymentId);
     setBusy(true);
     try {
       await api(`payments/${paymentId}/decide/`, {
@@ -586,7 +590,7 @@ export default function ClientDetailScreen() {
         ['Account name', trainer.bank_account_name],
         ['Account number', trainer.bank_account_number],
         ['Cash note', trainer.cash_note],
-      ] as [string, string][]).filter(([, value]) => value.trim().length > 0)
+      ] as [string, string][]).filter(([, value]) => (value ?? '').trim().length > 0)
     : [];
   const hasInstructions = paymentInstructions.length > 0;
 
@@ -880,7 +884,7 @@ export default function ClientDetailScreen() {
             <Text className="text-sm font-medium">
               {editingPeriod ? 'Edit period' : 'Add period'}
             </Text>
-            <View className="flex-row gap-3">
+            <View className="gap-3 web:flex-row">
               <DatePopoverField
                 label="Start date"
                 value={periodStart}
@@ -890,6 +894,7 @@ export default function ClientDetailScreen() {
               />
               <DatePopoverField
                 label="End date"
+                minDate={periodStart || undefined}
                 value={periodEnd}
                 onChange={setPeriodEnd}
                 placeholder="Pick a date"

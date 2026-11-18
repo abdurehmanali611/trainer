@@ -6,9 +6,11 @@ import * as DialogPrimitive from '@rn-primitives/dialog';
 import { X } from 'lucide-react-native';
 import * as React from 'react';
 import {
+  Keyboard,
   Platform,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
   type GestureResponderEvent,
   type StyleProp,
@@ -28,6 +30,29 @@ const DialogClose = DialogPrimitive.Close;
 
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
 
+/** Current soft-keyboard height on native (0 when hidden, always 0 on web). */
+function useKeyboardHeight(): number {
+  const [height, setHeight] = React.useState(0);
+  React.useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, (e) => setHeight(e.endCoordinates?.height ?? 0));
+    const hide = Keyboard.addListener(hideEvent, () => setHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+  return height;
+}
+
+/**
+ * Tallest the open dialog may be, in px (native only; null on web where CSS
+ * `85vh` is used). Shared with <DialogBody> so it can size its scroll area.
+ */
+const DialogMaxHeightContext = React.createContext<number | null>(null);
+
 function DialogOverlay({
   className,
   children,
@@ -37,6 +62,9 @@ function DialogOverlay({
   children?: React.ReactNode;
 }) {
   const { onOpenChange } = DialogPrimitive.useRootContext();
+  // Edge-to-edge Android doesn't resize the window for the keyboard, so lift
+  // the centred dialog by padding the overlay's bottom with the keyboard height.
+  const keyboardHeight = useKeyboardHeight();
 
   function onOverlayPress(event: GestureResponderEvent) {
     onPress?.(event);
@@ -55,6 +83,7 @@ function DialogOverlay({
           }),
           className
         )}
+        style={Platform.OS === 'web' ? undefined : { paddingBottom: 8 + keyboardHeight }}
         {...props}
         onPress={Platform.select({ web: onOverlayPress, native: onPress })}
         asChild={Platform.OS !== 'web'}>
@@ -62,7 +91,12 @@ function DialogOverlay({
           entering={FadeIn.duration(200).reduceMotion(ReduceMotion.System)}
           exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}
           as="Pressable">
+          {/* Full-width wrapper (native): without it this animated view is
+              auto-width, so the dialog's `w-full` resolves against its own
+              content and the dialog shrinks to its widest child — fields
+              like a lone search input then collapse to a sliver. */}
           <NativeOnlyAnimatedView
+            style={Platform.OS === 'web' ? undefined : { width: '100%', alignItems: 'center', paddingHorizontal: 8 }}
             entering={FadeIn.delay(50).reduceMotion(ReduceMotion.System)}
             exiting={FadeOut.duration(150).reduceMotion(ReduceMotion.System)}>
             <>{children}</>
@@ -86,10 +120,15 @@ function DialogContent({
   // height, on native 88% of the available space. Combine with <DialogBody>
   // for the form content so headers and footers stay pinned while the body
   // scrolls.
-  const maxHeight = Platform.select({
-    web: '85vh',
-    default: '88%',
-  }) as ViewStyle['maxHeight'];
+  const { height: windowHeight } = useWindowDimensions();
+  const keyboardHeight = useKeyboardHeight();
+  // Native: an explicit pixel cap (percent caps resolve against an auto-height
+  // parent and misbehave). Leaves room for the keyboard and the status bar.
+  const nativeMax = Math.max(
+    240,
+    Math.min(windowHeight * 0.9, windowHeight - keyboardHeight - 72)
+  );
+  const maxHeight = (Platform.OS === 'web' ? '85vh' : nativeMax) as ViewStyle['maxHeight'];
 
   // While a web alert (our Alert.alert replacement) is on screen, focus moves
   // outside this dialog — Radix interprets that as a dismiss gesture and
@@ -115,7 +154,9 @@ function DialogContent({
           onPointerDownOutside={swallowWhileAlerting}
           style={[{ maxHeight }, style]}
           {...props}>
-          <>{children}</>
+          <DialogMaxHeightContext.Provider value={Platform.OS === 'web' ? null : nativeMax}>
+            <>{children}</>
+          </DialogMaxHeightContext.Provider>
           <DialogPrimitive.Close
             className={cn(
               'absolute right-4 top-4 rounded opacity-70 active:opacity-100',
@@ -150,15 +191,36 @@ function DialogBody({
   style,
   contentContainerStyle,
   children,
+  onContentSizeChange,
   ...props
 }: React.ComponentProps<typeof ScrollView> & { contentContainerClassName?: string }) {
+  const dialogMax = React.useContext(DialogMaxHeightContext);
+  const [contentHeight, setContentHeight] = React.useState<number | null>(null);
+  // Native: size the scroll area to its content (so short forms never scroll),
+  // capped to what's left of the dialog after the header, footer and padding.
+  const bodyCap = dialogMax === null ? undefined : Math.max(120, dialogMax - 190);
+  const nativeHeight =
+    bodyCap !== undefined && contentHeight !== null
+      ? Math.min(contentHeight, bodyCap)
+      : undefined;
+
   return (
     <ScrollView
-      style={[{ flexGrow: 0, flexShrink: 1 }, style]}
+      style={[
+        { flexGrow: 0, flexShrink: 1 },
+        bodyCap !== undefined ? { maxHeight: bodyCap } : null,
+        nativeHeight !== undefined ? { height: nativeHeight } : null,
+        style,
+      ]}
       contentContainerStyle={[{ paddingBottom: 4 }, contentContainerStyle]}
       contentContainerClassName={contentContainerClassName}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
+      onContentSizeChange={(w, h) => {
+        setContentHeight(h);
+        onContentSizeChange?.(w, h);
+      }}
       {...props}>
       {children}
     </ScrollView>

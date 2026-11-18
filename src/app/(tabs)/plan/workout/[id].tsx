@@ -557,27 +557,39 @@ export default function WorkoutPlanScreen() {
             value={search}
             onChangeText={setSearch}
             autoCapitalize="none"
+            className="self-stretch"
+            style={{ width: '100%' }}
           />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerClassName="gap-2">
-            {MUSCLE_GROUPS.map((g) => (
-              <Pressable
-                key={g}
-                onPress={() => setGroup(g)}
-                className={cn(
-                  'rounded-full border px-3 py-1.5',
-                  group === g ? 'border-primary bg-primary' : 'border-border bg-background'
-                )}>
-                <Text
-                  className={cn('text-xs font-medium', group === g ? 'text-primary-foreground' : 'text-foreground')}>
-                  {g}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-          <DialogBody>
+          {/* Fixed height + no shrink: a horizontal ScrollView in a column
+              collapses to 0 height when the list below is empty. */}
+          <View style={{ height: 40, flexGrow: 0, flexShrink: 0, alignSelf: 'stretch' }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+              style={{ flexGrow: 0 }}
+              contentContainerStyle={{ gap: 8, alignItems: 'center', paddingRight: 8 }}>
+              {MUSCLE_GROUPS.map((g) => (
+                <Pressable
+                  key={g}
+                  onPress={() => setGroup(g)}
+                  className={cn(
+                    'h-9 items-center justify-center rounded-full border px-4',
+                    group === g ? 'border-primary bg-primary' : 'border-border bg-secondary'
+                  )}>
+                  <Text
+                    className={cn(
+                      'text-sm font-medium',
+                      group === g ? 'text-primary-foreground' : 'text-foreground'
+                    )}>
+                    {g}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+          <DialogBody contentContainerStyle={{ minHeight: 160 }}>
             {pickerLoading ? (
               <View className="items-center py-6">
                 <ActivityIndicator />

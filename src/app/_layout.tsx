@@ -12,6 +12,10 @@ import { useInAppNotifications } from '@/hooks/use-in-app-notifications';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { NotificationBanner } from '@/components/notification-banner';
 
+// A render error in any screen shows Expo Router's "Try again" screen instead
+// of closing the app (release builds have no other error boundary).
+export { ErrorBoundary } from 'expo-router';
+
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {

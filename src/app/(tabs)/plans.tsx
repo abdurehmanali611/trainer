@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { ChevronRightIcon, NotebookPenIcon, PlusIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
@@ -84,9 +84,9 @@ export default function PlansScreen() {
   const [creating, setCreating] = React.useState(false);
 
   const load = React.useCallback(
-    async (initial?: boolean) => {
+    async (initial?: boolean, silent?: boolean) => {
       if (initial) setLoading(true);
-      else setRefreshing(true);
+      else if (!silent) setRefreshing(true);
       setError(null);
       try {
         const clientFilter = filter.value === 'all' ? undefined : filter.value;
@@ -106,15 +106,25 @@ export default function PlansScreen() {
     [filter]
   );
 
-  React.useEffect(() => {
-    void load(true);
-  }, [load]);
+  // Reload whenever the screen regains focus (e.g. coming back from a plan
+  // that was just created or deleted) so the list is never stale. Only the
+  // very first load shows the full-screen spinner; later ones are silent.
+  const firstLoad = React.useRef(true);
+  useFocusEffect(
+    React.useCallback(() => {
+      const initial = firstLoad.current;
+      firstLoad.current = false;
+      void load(initial, !initial);
+    }, [load])
+  );
 
-  React.useEffect(() => {
-    api<Paginated<Client>>('clients/', { query: { page_size: 200 } })
-      .then((res) => setClients(res.results))
-      .catch(() => setClients([]));
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      api<Paginated<Client>>('clients/', { query: { page_size: 200 } })
+        .then((res) => setClients(res.results))
+        .catch(() => undefined);
+    }, [])
+  );
 
   async function onCreate() {
     setCreating(true);

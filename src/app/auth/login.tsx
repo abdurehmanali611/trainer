@@ -43,14 +43,6 @@ export default function LoginScreen() {
       subtitle="Sign in to manage your clients."
       footer={
         <View className="w-full max-w-md flex-row items-center justify-center gap-2">
-          <Link href="/auth/forgot-password" asChild>
-            <Button variant="link" size="sm" className="rounded-full px-4">
-              <Text className="text-sm font-semibold text-white/90 underline underline-offset-4">
-                Forgot password?
-              </Text>
-            </Button>
-          </Link>
-          <View className="h-4 w-px bg-white/30" />
           <Link href="/auth/register" asChild>
             <Button variant="link" size="sm" className="rounded-full px-4">
               <Text className="text-sm font-semibold text-white underline underline-offset-4">

@@ -1,4 +1,12 @@
-import { BadgeCheckIcon, StarIcon, UserIcon, VideoIcon } from 'lucide-react-native';
+import {
+  BadgeCheckIcon,
+  CalendarClockIcon,
+  StarIcon,
+  UserIcon,
+  UserXIcon,
+  VideoIcon,
+  XCircleIcon,
+} from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
@@ -10,11 +18,10 @@ import {
   Screen,
   toneForSession,
 } from '@/components/screen';
-import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/api';
-import { clockTime, dayLabel, format, shortDate } from '@/lib/dates';
+import { clockTime, dayLabel, format } from '@/lib/dates';
 import { labelize } from '@/lib/format';
 import type { Paginated, Session, SessionStatus } from '@/lib/types';
 
@@ -22,6 +29,71 @@ type Segment = 'online' | 'offline';
 
 function unwrap<T>(data: Paginated<T> | T[]): T[] {
   return Array.isArray(data) ? data : data.results;
+}
+
+const OUTCOME_TONES = {
+  success: {
+    box: 'border-emerald-500/40 bg-emerald-500/10',
+    activeBox: 'border-emerald-500 bg-emerald-500',
+    text: 'text-emerald-400',
+    icon: '#34D399',
+  },
+  warning: {
+    box: 'border-amber-500/40 bg-amber-500/10',
+    activeBox: 'border-amber-500 bg-amber-500',
+    text: 'text-amber-400',
+    icon: '#FBBF24',
+  },
+  info: {
+    box: 'border-sky-500/40 bg-sky-500/10',
+    activeBox: 'border-sky-500 bg-sky-500',
+    text: 'text-sky-400',
+    icon: '#38BDF8',
+  },
+  danger: {
+    box: 'border-red-500/40 bg-red-500/10',
+    activeBox: 'border-red-500 bg-red-500',
+    text: 'text-red-400',
+    icon: '#F87171',
+  },
+} as const;
+
+/** One outcome choice for an online session: tinted pill, filled when current. */
+function OutcomeButton({
+  label,
+  icon,
+  tone,
+  active,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  icon: React.ComponentProps<typeof Icon>['as'];
+  tone: keyof typeof OUTCOME_TONES;
+  active: boolean;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const styles = OUTCOME_TONES[tone];
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || active}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active, disabled: disabled || active }}
+      className={
+        'h-11 min-w-0 flex-1 flex-row items-center justify-center gap-1.5 rounded-xl border px-2 active:opacity-70 ' +
+        (active ? styles.activeBox : styles.box) +
+        (disabled && !active ? ' opacity-50' : '')
+      }>
+      <Icon as={icon} size={15} color={active ? '#FFFFFF' : styles.icon} />
+      <Text
+        numberOfLines={1}
+        className={'text-[13px] font-semibold ' + (active ? 'text-white' : styles.text)}>
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
 function SessionRow({
@@ -62,52 +134,56 @@ function SessionRow({
 
       {mode === 'online' ? (
         // Feature 21: the four remark-online outcomes.
-        <View className="flex-row flex-wrap gap-2">
-          <Button
-            size="sm"
-            className="flex-1"
-            disabled={busy || session.status === 'approved'}
-            onPress={() => onStatus(session, 'approved')}>
-            <Icon as={BadgeCheckIcon} size={14} />
-            <Text>Approved</Text>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            disabled={busy || session.status === 'no_show'}
-            onPress={() => onStatus(session, 'no_show')}>
-            <Text>No show</Text>
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            disabled={busy || session.status === 'rescheduling'}
-            onPress={() => onStatus(session, 'rescheduling')}>
-            <Text>Rescheduling</Text>
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="flex-1"
-            disabled={busy || session.status === 'canceled'}
-            onPress={() =>
-              Alert.alert(
-                'Cancelling',
-                `Mark the online session with ${session.client_name} as cancelling?`,
-                [
-                  { text: 'Back', style: 'cancel' },
-                  {
-                    text: 'Cancelling',
-                    style: 'destructive',
-                    onPress: () => onStatus(session, 'canceled'),
-                  },
-                ]
-              )
-            }>
-            <Text>Cancelling</Text>
-          </Button>
+        <View className="mt-1 gap-2">
+          <View className="flex-row gap-2">
+            <OutcomeButton
+              label="No show"
+              icon={UserXIcon}
+              tone="warning"
+              active={session.status === 'no_show'}
+              disabled={busy}
+              onPress={() => onStatus(session, 'no_show')}
+            />
+            <OutcomeButton
+              label="Approved"
+              icon={BadgeCheckIcon}
+              tone="success"
+              active={session.status === 'approved'}
+              disabled={busy}
+              onPress={() => onStatus(session, 'approved')}
+            />
+          </View>
+          <View className="flex-row gap-2">
+            <OutcomeButton
+              label="Rescheduling"
+              icon={CalendarClockIcon}
+              tone="info"
+              active={session.status === 'rescheduling'}
+              disabled={busy}
+              onPress={() => onStatus(session, 'rescheduling')}
+            />
+            <OutcomeButton
+              label="Cancelling"
+              icon={XCircleIcon}
+              tone="danger"
+              active={session.status === 'canceled'}
+              disabled={busy}
+              onPress={() =>
+                Alert.alert(
+                  'Cancelling',
+                  `Mark the online session with ${session.client_name} as cancelling?`,
+                  [
+                    { text: 'Back', style: 'cancel' },
+                    {
+                      text: 'Cancelling',
+                      style: 'destructive',
+                      onPress: () => onStatus(session, 'canceled'),
+                    },
+                  ]
+                )
+              }
+            />
+          </View>
         </View>
       ) : (
         // Feature 25: remark OFFLINE is read-only — the trainer only sees
