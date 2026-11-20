@@ -5,9 +5,11 @@ import {
   LandmarkIcon,
   PlusIcon,
   SmartphoneIcon,
+  WalletIcon,
   Trash2Icon,
 } from 'lucide-react-native';
 
+import { alpha, COLORS, IconBubble, Panel } from '@/components/kit';
 import { Badge, EmptyView } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -132,14 +134,16 @@ function customCycleLabel(from: string, to: string): string | null {
   return `${days} day subscription`;
 }
 
+const CHANNEL_COLOR: Record<Instruction['channel'], string> = {
+  telebirr: COLORS.green,
+  bank: COLORS.sky,
+  cash: COLORS.amber,
+};
+
 function ChannelIcon({ channel }: { channel: Instruction['channel'] }) {
   const icon =
     channel === 'telebirr' ? SmartphoneIcon : channel === 'bank' ? LandmarkIcon : BanknoteIcon;
-  return (
-    <View className="h-9 w-9 items-center justify-center rounded-xl bg-primary/12 ring-1 ring-primary/25">
-      <Icon as={icon} size={17} className="text-primary" />
-    </View>
-  );
+  return <IconBubble icon={icon} color={CHANNEL_COLOR[channel]} size={42} />;
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -274,15 +278,18 @@ export function PaymentInstructionsSection() {
 
   return (
     <View className="gap-3">
-      <View className="flex-row items-center justify-between">
-        <View className="gap-0.5">
-          <Text className="text-sm font-semibold">My payment instructions</Text>
-          <Text variant="muted" className="text-xs">
-            Reusable methods you attach to clients when you create them.
-          </Text>
+      <View className="flex-row items-center justify-between gap-3">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
+          <IconBubble icon={WalletIcon} color={COLORS.green} size={34} />
+          <View className="min-w-0 flex-1 gap-0.5">
+            <Text className="text-[15px] font-bold tracking-tight">My payment instructions</Text>
+            <Text variant="muted" className="text-xs">
+              Reusable methods you attach to clients.
+            </Text>
+          </View>
         </View>
-        <Button size="sm" onPress={openCreate}>
-          <Icon as={PlusIcon} size={15} />
+        <Button size="sm" onPress={openCreate} className="shrink-0 rounded-xl">
+          <Icon as={PlusIcon} size={15} color="#04110A" />
           <Text>New</Text>
         </Button>
       </View>
@@ -293,6 +300,8 @@ export function PaymentInstructionsSection() {
         </Text>
       ) : items.length === 0 ? (
         <EmptyView
+          icon={WalletIcon}
+          color={COLORS.green}
           title="No payment instructions yet"
           subtitle="Create one so every new client knows exactly how to pay you."
           action={
@@ -303,10 +312,11 @@ export function PaymentInstructionsSection() {
         />
       ) : (
         items.map((instruction) => (
-          <Pressable
+          <Panel
             key={instruction.id}
+            tint={CHANNEL_COLOR[instruction.channel]}
             onPress={() => openEdit(instruction)}
-            className="gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm shadow-black/[0.05] active:bg-accent/40 dark:shadow-black/30">
+            className="gap-3">
             <View className="flex-row items-center gap-3">
               <ChannelIcon channel={instruction.channel} />
               <View className="min-w-0 flex-1 gap-0.5">
@@ -372,12 +382,15 @@ export function PaymentInstructionsSection() {
               <Pressable
                 onPress={() => remove(instruction.id)}
                 hitSlop={8}
-                className="flex-row items-center gap-1.5 rounded-full bg-rose-500/10 px-2.5 py-1 active:opacity-70">
-                <Trash2Icon size={12} color="#E11D48" />
-                <Text className="text-[11px] font-semibold text-rose-600">Delete</Text>
+                className="flex-row items-center gap-1.5 rounded-full px-3 py-1.5 active:opacity-70"
+                style={{ backgroundColor: alpha(COLORS.rose, 0.14) }}>
+                <Trash2Icon size={13} color={COLORS.rose} />
+                <Text className="text-[11px] font-bold" style={{ color: COLORS.rose }}>
+                  Delete
+                </Text>
               </Pressable>
             </View>
-          </Pressable>
+          </Panel>
         ))
       )}
 

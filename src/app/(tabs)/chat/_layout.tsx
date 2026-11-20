@@ -22,7 +22,8 @@ export default function ChatLayout() {
       }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="[id]" options={{ title: 'Chat' }} />
-      <Stack.Screen name="broadcast" options={{ title: 'Broadcast' }} />
+      {/* Broadcast draws its own gradient header with a back button. */}
+      <Stack.Screen name="broadcast" options={{ headerShown: false, title: 'Broadcast' }} />
     </Stack>
   );
 }

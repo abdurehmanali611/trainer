@@ -1,19 +1,28 @@
 import { useRouter } from 'expo-router';
 import {
   BellIcon,
+  CalendarClockIcon,
+  CheckCheckIcon,
   ChevronLeftIcon,
   CreditCardIcon,
+  InboxIcon,
   LifeBuoyIcon,
   ListChecksIcon,
   LogOutIcon,
   MessageCircleIcon,
+  MessageSquareIcon,
   NotebookPenIcon,
   Settings2Icon,
+  TriangleAlertIcon,
+  TrophyIcon,
   UserIcon,
+  type LucideIcon,
 } from 'lucide-react-native';
 import * as React from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 
+import { Gradient, powerGradient } from '@/components/gradient';
+import { alpha, COLORS, IconBubble } from '@/components/kit';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +42,15 @@ import { confirmAction } from '@/lib/confirm';
 import { relativeTime } from '@/lib/dates';
 import type { AppNotification } from '@/lib/types';
 
+const NOTIFICATION_STYLE: Record<AppNotification['type'], { icon: LucideIcon; color: string }> = {
+  booking: { icon: CalendarClockIcon, color: COLORS.sky },
+  payment: { icon: CreditCardIcon, color: COLORS.green },
+  message: { icon: MessageSquareIcon, color: COLORS.cyan },
+  alert: { icon: TriangleAlertIcon, color: COLORS.rose },
+  achievement: { icon: TrophyIcon, color: COLORS.amber },
+  request: { icon: InboxIcon, color: COLORS.violet },
+};
+
 function IconButton({
   onPress,
   dot,
@@ -49,7 +67,8 @@ function IconButton({
       <Button
         size="icon"
         variant="outline"
-        className="h-10 w-10 rounded-full border-border/80 bg-card"
+        className="h-10 w-10 rounded-full"
+        style={{ backgroundColor: alpha(COLORS.cyan, 0.12), borderColor: alpha(COLORS.cyan, 0.35) }}
         onPress={onPress}
         accessibilityLabel={label}>
         {children}
@@ -152,31 +171,35 @@ export function AppHeader() {
     <View className="mb-9 flex-row items-center justify-between gap-3">
       <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
         <View className={`relative ${router.canGoBack() ? 'ml-9' : ''}`}>
-          <Avatar
-            alt={trainer?.full_name || 'Trainer'}
-            accessibilityLabel={trainer?.full_name || 'Trainer'}
-            className="h-10 w-10 items-center justify-center bg-primary/10 ring-1 ring-primary/20">
-            {trainer?.avatar_url ? <AvatarImage source={{ uri: trainer.avatar_url }} /> : null}
-            <AvatarFallback>
-              <Text className="text-xs font-bold text-primary">{initials}</Text>
-            </AvatarFallback>
-          </Avatar>
+          <Gradient colors={powerGradient} style={{ width: 46, height: 46, borderRadius: 23, padding: 2 }}>
+            <Avatar
+              alt={trainer?.full_name || 'Trainer'}
+              accessibilityLabel={trainer?.full_name || 'Trainer'}
+              className="h-full w-full items-center justify-center bg-card">
+              {trainer?.avatar_url ? <AvatarImage source={{ uri: trainer.avatar_url }} /> : null}
+              <AvatarFallback>
+                <Text className="text-xs font-extrabold" style={{ color: COLORS.green }}>
+                  {initials}
+                </Text>
+              </AvatarFallback>
+            </Avatar>
+          </Gradient>
           {router.canGoBack() ? (
             <Pressable
               onPress={() => router.back()}
               hitSlop={10}
               accessibilityLabel="Go back"
-              className="absolute -left-9 top-1.5 z-10 h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-card shadow-sm active:opacity-70">
+              className="absolute -left-9 top-2 z-10 h-7 w-7 items-center justify-center rounded-full border border-border/80 bg-card shadow-sm active:opacity-70">
               <Icon as={ChevronLeftIcon} size={16} />
             </Pressable>
           ) : null}
         </View>
         <View className="min-w-0 flex-1 gap-0.5">
-          <Text variant="h4" numberOfLines={1} className="text-lg">
+          <Text variant="h4" numberOfLines={1} className="text-base font-black">
             {trainer?.full_name || 'Trainer'}
           </Text>
           {trainer?.gym_name ? (
-            <Text variant="muted" className="text-xs" numberOfLines={1}>
+            <Text className="text-xs font-semibold" style={{ color: COLORS.lime }} numberOfLines={1}>
               {trainer.gym_name}
             </Text>
           ) : null}
@@ -185,7 +208,7 @@ export function AppHeader() {
 
       <View className="flex-row items-center gap-2">
         <IconButton label="Open chats" dot={chatUnread > 0} onPress={() => router.push('/chat')}>
-          <Icon as={MessageCircleIcon} size={18} />
+          <Icon as={MessageCircleIcon} size={18} color={COLORS.cyan} />
         </IconButton>
 
         <DropdownMenu onOpenChange={(open) => open && void loadNotifications()}>
@@ -193,9 +216,10 @@ export function AppHeader() {
             <Button
               size="icon"
               variant="outline"
-              className="relative h-10 w-10 rounded-full border-border/80 bg-card"
+              className="relative h-10 w-10 rounded-full"
+              style={{ backgroundColor: alpha(COLORS.amber, 0.12), borderColor: alpha(COLORS.amber, 0.35) }}
               accessibilityLabel="Open notifications">
-              <Icon as={BellIcon} size={18} />
+              <Icon as={BellIcon} size={18} color={COLORS.amber} />
               {notifUnread > 0 ? (
                 <View className="pointer-events-none absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-destructive" />
               ) : null}
@@ -203,13 +227,27 @@ export function AppHeader() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-80">
             <View className="flex-row items-center justify-between px-2 py-1.5">
-              <Text className="text-sm font-semibold">Notifications</Text>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm font-black">Notifications</Text>
+                {notifUnread > 0 ? (
+                  <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: COLORS.rose }}>
+                    <Text className="text-[11px] font-black text-white">{notifUnread}</Text>
+                  </View>
+                ) : null}
+              </View>
               <Pressable
                 disabled={notifUnread === 0}
                 onPress={() => void markAllRead()}
                 hitSlop={8}
-                className={notifUnread === 0 ? 'opacity-40' : 'active:opacity-60'}>
-                <Text className="text-xs font-medium text-primary">Mark all read</Text>
+                className={
+                  notifUnread === 0
+                    ? 'flex-row items-center gap-1 opacity-40'
+                    : 'flex-row items-center gap-1 active:opacity-60'
+                }>
+                <Icon as={CheckCheckIcon} size={14} color={COLORS.green} />
+                <Text className="text-xs font-bold" style={{ color: COLORS.green }}>
+                  Mark all read
+                </Text>
               </Pressable>
             </View>
             <DropdownMenuSeparator />
@@ -224,42 +262,60 @@ export function AppHeader() {
             ) : (
               <ScrollView style={{ maxHeight: 320 }} showsVerticalScrollIndicator={false}>
                 <View className="gap-1 py-1">
-                  {notifItems.map((notification) => (
-                    <Pressable
-                      key={notification.id}
-                      onPress={() => void markRead(notification)}
-                      className={
-                        'gap-1 rounded-lg px-2 py-2 active:bg-accent ' +
-                        (notification.read ? '' : 'bg-accent/50')
-                      }>
-                      <View className="flex-row items-center gap-2">
-                        {!notification.read ? (
-                          <View className="bg-primary h-1.5 w-1.5 shrink-0 rounded-full" />
-                        ) : null}
-                        <Text
-                          className={
-                            'min-w-0 flex-1 text-sm ' + (notification.read ? '' : 'font-semibold')
-                          }
-                          numberOfLines={1}>
-                          {notification.title}
-                        </Text>
-                        <Text className="text-[11px] text-muted-foreground">
-                          {relativeTime(notification.created_at)}
-                        </Text>
-                      </View>
-                      <Text variant="muted" className="text-xs" numberOfLines={2}>
-                        {notification.body}
-                      </Text>
-                      {!notification.read ? (
-                        <Pressable
-                          onPress={() => void markRead(notification)}
-                          hitSlop={8}
-                          className="self-start active:opacity-60">
-                          <Text className="text-xs font-medium text-primary">Mark as read</Text>
-                        </Pressable>
-                      ) : null}
-                    </Pressable>
-                  ))}
+                  {notifItems.map((notification) => {
+                    const style = NOTIFICATION_STYLE[notification.type] ?? {
+                      icon: BellIcon,
+                      color: COLORS.green,
+                    };
+                    return (
+                      <Pressable
+                        key={notification.id}
+                        onPress={() => void markRead(notification)}
+                        className="flex-row items-start gap-2.5 rounded-2xl px-2 py-2 active:opacity-70"
+                        style={
+                          notification.read
+                            ? undefined
+                            : { backgroundColor: alpha(style.color, 0.1) }
+                        }>
+                        <IconBubble icon={style.icon} color={style.color} size={34} />
+                        <View className="min-w-0 flex-1 gap-0.5">
+                          <View className="flex-row items-center gap-2">
+                            <Text
+                              className={
+                                'min-w-0 flex-1 text-sm ' +
+                                (notification.read ? 'font-semibold' : 'font-black')
+                              }
+                              numberOfLines={1}>
+                              {notification.title}
+                            </Text>
+                            {!notification.read ? (
+                              <View
+                                style={{
+                                  width: 8,
+                                  height: 8,
+                                  borderRadius: 4,
+                                  backgroundColor: style.color,
+                                }}
+                              />
+                            ) : null}
+                          </View>
+                          <Text variant="muted" className="text-xs" numberOfLines={2}>
+                            {notification.body}
+                          </Text>
+                          <View className="flex-row items-center justify-between">
+                            <Text className="text-[11px] font-semibold" style={{ color: style.color }}>
+                              {relativeTime(notification.created_at)}
+                            </Text>
+                            {!notification.read ? (
+                              <Text className="text-[11px] font-bold" style={{ color: COLORS.green }}>
+                                Tap to mark read
+                              </Text>
+                            ) : null}
+                          </View>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </ScrollView>
             )}
@@ -271,9 +327,10 @@ export function AppHeader() {
             <Button
               size="icon"
               variant="outline"
-              className="h-10 w-10 rounded-full border-border/80 bg-card"
+              className="h-10 w-10 rounded-full"
+              style={{ backgroundColor: alpha(COLORS.violet, 0.12), borderColor: alpha(COLORS.violet, 0.35) }}
               accessibilityLabel="Open menu">
-              <Icon as={Settings2Icon} size={18} />
+              <Icon as={Settings2Icon} size={18} color={COLORS.violet} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-60">

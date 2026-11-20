@@ -3,9 +3,11 @@ import * as React from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
-import { ChevronLeftIcon, ImagePlusIcon, SendIcon } from 'lucide-react-native';
+import { ChevronLeftIcon, ImagePlusIcon, LifeBuoyIcon, SendIcon, XIcon } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 
+import { Gradient, oceanGradient } from '@/components/gradient';
+import { alpha, COLORS, IconBubble } from '@/components/kit';
 import { ErrorView, LoadingView } from '@/components/screen';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
@@ -128,7 +130,25 @@ export default function PlatformSupportChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
       <Stack.Screen options={{ headerShown: false, title: 'Support chat' }} />
-      {backButton}
+      <Gradient colors={oceanGradient} style={{ paddingTop: insets.top + 10, paddingBottom: 16 }}>
+        <View className="flex-row items-center gap-3 px-4">
+          {router.canGoBack() ? (
+            <Pressable
+              onPress={() => router.back()}
+              accessibilityLabel="Go back"
+              hitSlop={8}
+              className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+              style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
+              <Icon as={ChevronLeftIcon} size={20} color="#ffffff" />
+            </Pressable>
+          ) : null}
+          <View className="min-w-0 flex-1">
+            <Text className="text-xl font-black tracking-tight text-white">Support</Text>
+            <Text className="text-xs font-medium text-white/80">Chat with the Apex team</Text>
+          </View>
+          <Icon as={LifeBuoyIcon} size={26} color="#ffffff" />
+        </View>
+      </Gradient>
       <FlatList
         data={list}
         keyExtractor={(item) => String(item.id)}
@@ -138,8 +158,8 @@ export default function PlatformSupportChatScreen() {
           return (
             <View className={`mb-3 max-w-[85%] gap-1 ${fromAdmin ? 'self-start' : 'self-end'}`}>
               <View
-                className={`rounded-2xl px-4 py-2 ${
-                  fromAdmin ? 'rounded-tl-sm bg-muted' : 'rounded-tr-sm bg-primary'
+                className={`rounded-3xl px-4 py-2.5 ${
+                  fromAdmin ? 'rounded-bl-md border border-border bg-card' : 'rounded-br-md bg-primary'
                 }`}>
                 {item.body ? (
                   <Text
@@ -168,65 +188,94 @@ export default function PlatformSupportChatScreen() {
           );
         }}
         ListEmptyComponent={
-          <View className="items-center justify-center py-10">
-            <Text variant="muted" className="text-sm">
+          <View className="items-center justify-center gap-3 py-12">
+            <IconBubble icon={LifeBuoyIcon} color={COLORS.sky} size={64} />
+            <Text className="text-lg font-bold tracking-tight">How can we help?</Text>
+            <Text variant="muted" className="text-center text-sm">
               Start a conversation with the support team.
             </Text>
           </View>
         }
       />
-      {images.length > 0 ? (
-        <View className="flex-row flex-wrap gap-2 border-t border-border px-4 py-2">
+      {images.length > 0 || uploading ? (
+        <View
+          className="flex-row flex-wrap gap-2.5 border-t border-border px-4 pt-3"
+          style={{ backgroundColor: '#0B1220' }}>
           {images.map((uri, idx) => (
             <View key={uri} className="relative">
-              <Image source={{ uri }} style={{ width: 72, height: 72, borderRadius: 10 }} contentFit="cover" />
+              <Image source={{ uri }} style={{ width: 64, height: 64, borderRadius: 16 }} contentFit="cover" />
               <Pressable
                 onPress={() => setImages((prev) => prev.filter((_, i) => i !== idx))}
-                className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-foreground">
-                <Text className="text-[10px] text-background">×</Text>
+                hitSlop={6}
+                className="absolute -right-1.5 -top-1.5 h-6 w-6 items-center justify-center rounded-full"
+                style={{ backgroundColor: COLORS.rose }}>
+                <Icon as={XIcon} size={13} color="#ffffff" />
               </Pressable>
             </View>
           ))}
           {uploading && uploadingUri ? (
-            <View className="h-[72px] w-[72px] items-center justify-center rounded-[10px] bg-muted">
-              <Text variant="muted" className="text-xs">
-                Uploading
+            <View
+              className="items-center justify-center rounded-2xl"
+              style={{ width: 64, height: 64, backgroundColor: alpha(COLORS.cyan, 0.14) }}>
+              <Text className="text-[11px] font-bold" style={{ color: COLORS.cyan }}>
+                Uploading…
               </Text>
             </View>
           ) : null}
         </View>
       ) : null}
       <View
-        className="flex-row items-end gap-2 border-t border-border px-4"
-        style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: 10 }}>
-        <Pressable onPress={() => void pickImage()} disabled={uploading || images.length >= 5} className="mb-1">
-          <Icon as={ImagePlusIcon} size={22} className={images.length >= 5 ? 'text-muted-foreground' : 'text-foreground'} />
+        className={cn(
+          'flex-row items-end gap-2.5 px-3 pt-2.5',
+          images.length === 0 && !uploading && 'border-t border-border'
+        )}
+        style={{ paddingBottom: 12, backgroundColor: '#0B1220' }}>
+        <Pressable
+          onPress={() => void pickImage()}
+          disabled={uploading || images.length >= 5}
+          accessibilityLabel="Attach photos"
+          className="h-11 w-11 items-center justify-center rounded-full active:opacity-70"
+          style={{
+            backgroundColor: alpha(COLORS.cyan, images.length >= 5 ? 0.05 : 0.14),
+            borderWidth: 1,
+            borderColor: alpha(COLORS.cyan, images.length >= 5 ? 0.15 : 0.4),
+          }}>
+          <Icon as={ImagePlusIcon} size={20} color={images.length >= 5 ? COLORS.muted : COLORS.cyan} />
         </Pressable>
         <View
-          className={cn(
-            'flex-1 rounded-2xl border px-3 py-2 transition-colors',
-            inputFocused
-              ? 'border-primary bg-card shadow-sm shadow-primary/25'
-              : 'border-border bg-muted'
-          )}>
+          className="min-h-11 flex-1 justify-center rounded-3xl border px-4"
+          style={{
+            backgroundColor: inputFocused ? alpha(COLORS.green, 0.06) : '#101826',
+            borderColor: inputFocused ? alpha(COLORS.green, 0.7) : '#1E293B',
+          }}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
             placeholder="Message support…"
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor="#64748B"
             multiline
+            numberOfLines={1}
             onFocus={() => setInputFocused(true)}
             onBlur={() => setInputFocused(false)}
-            className="max-h-28 text-sm text-foreground outline-none"
+            selectionColor="#3ADD6C"
+            cursorColor="#3ADD6C"
+            textAlignVertical="center"
+            className="max-h-28 py-2.5 text-[15px] text-foreground"
           />
         </View>
         <Pressable
           onPress={() => void send()}
           disabled={sending || (!draft.trim() && images.length === 0)}
-          className={`mb-1 h-9 w-9 items-center justify-center rounded-full ${
-            sending || (!draft.trim() && images.length === 0) ? 'bg-muted' : 'bg-primary'
-          }`}>
-          <Icon as={SendIcon} size={16} className={sending || (!draft.trim() && images.length === 0) ? 'text-muted-foreground' : 'text-primary-foreground'} />
+          accessibilityLabel="Send"
+          className="h-11 w-11 items-center justify-center rounded-full active:opacity-80"
+          style={{
+            backgroundColor: sending || (!draft.trim() && images.length === 0) ? '#16222F' : COLORS.green,
+          }}>
+          <Icon
+            as={SendIcon}
+            size={19}
+            color={sending || (!draft.trim() && images.length === 0) ? COLORS.muted : '#04110A'}
+          />
         </Pressable>
       </View>
     </KeyboardAvoidingView>

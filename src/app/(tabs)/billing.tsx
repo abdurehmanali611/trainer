@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
 import * as React from 'react';
+import { BellRingIcon, CreditCardIcon, HourglassIcon, ShieldCheckIcon, WalletIcon } from 'lucide-react-native';
 import { View } from 'react-native';
 
+import { COLORS } from '@/components/kit';
 import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Section } from '@/components/section';
 import { ClientBillingSection } from '@/components/billing/client-billing';
@@ -111,6 +113,8 @@ export default function BillingScreen() {
 
         <Section
           title="Subscription status"
+          icon={ShieldCheckIcon}
+          color={COLORS.green}
           action={<Badge tone={toneForState(billing.state)} label={platformStateLabel(billing.state)} />}>
           <View className="flex-row items-center justify-between gap-2">
             <Text variant="muted" className="text-sm">
@@ -161,7 +165,7 @@ export default function BillingScreen() {
         </Section>
 
         {billing.notices.length > 0 ? (
-          <Section title="Notices">
+          <Section title="Notices" icon={BellRingIcon} color={COLORS.sky}>
             {billing.notices.map((notice) => (
               <View key={notice.id} className="gap-1 rounded-xl border border-border bg-muted/70 p-3">
                 <Text className="text-sm font-semibold">{notice.title}</Text>
@@ -174,7 +178,7 @@ export default function BillingScreen() {
         ) : null}
 
         {billing.pending_payment ? (
-          <Section title="Pending review">
+          <Section title="Pending review" icon={HourglassIcon} color={COLORS.amber} tinted>
             <Text variant="muted" className="text-sm">
               {billing.pending_payment.kind === 'setup' ? 'Setup fee' : 'Quarterly'} ·{' '}
               {billing.pending_payment.amount_etb} ETB via {billing.pending_payment.channel}
@@ -193,6 +197,8 @@ export default function BillingScreen() {
         !billing.pending_payment &&
         (!billing.setup_fee_paid || billing.can_submit_payment) ? (
           <Section
+            icon={WalletIcon}
+            color={COLORS.lime}
             title={!billing.setup_fee_paid ? 'Pay the setup fee' : 'Pay the quarterly fee'}
             subtitle="Send the fee through your payment channel, then submit the transaction ID below. Apex reviews it before access resumes.">
             <View className="flex-row gap-2">
@@ -226,7 +232,7 @@ export default function BillingScreen() {
 
         {/* Feature 32: exempt trainers get no payment prompts whatsoever. */}
         {billing.is_illustration ? (
-          <Section title="Exempt account">
+          <Section title="Exempt account" icon={CreditCardIcon} color={COLORS.violet}>
             <Text variant="muted" className="text-xs">
               This account is illustrative — it is never billed and never sits
               in a payment queue.

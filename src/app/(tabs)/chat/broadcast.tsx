@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeftIcon } from 'lucide-react-native';
+import { ArrowLeftIcon, MegaphoneIcon, SendIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Gradient, violetGradient } from '@/components/gradient';
+import { alpha, COLORS } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Icon } from '@/components/ui/icon';
@@ -135,10 +137,14 @@ export default function BroadcastScreen() {
         renderItem={({ item }) => (
           <Pressable
             onPress={() => toggle(item.id)}
-            className="flex-row items-center gap-3 border-b border-border py-3 active:bg-accent">
+            className="mb-2 flex-row items-center gap-3 rounded-2xl border px-3.5 py-3 active:opacity-80"
+            style={{
+              backgroundColor: selected.has(item.id) ? alpha(COLORS.pink, 0.1) : alpha('#FFFFFF', 0.02),
+              borderColor: selected.has(item.id) ? alpha(COLORS.pink, 0.45) : '#1E293B',
+            }}>
             <Checkbox checked={selected.has(item.id)} onCheckedChange={() => toggle(item.id)} />
             <View className="flex-1">
-              <Text className="text-sm font-medium">{item.name}</Text>
+              <Text className="text-sm font-bold">{item.name}</Text>
               {item.phone ? (
                 <Text variant="muted" className="text-xs">
                   {item.phone}
@@ -169,16 +175,22 @@ export default function BroadcastScreen() {
     <KeyboardAvoidingView
       className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View
-        className="flex-row items-center gap-2 border-b border-border px-2 py-2"
-        style={{ paddingTop: insets.top + 8 }}>
-        <Pressable onPress={() => router.back()} hitSlop={8} className="p-2">
-          <Icon as={ArrowLeftIcon} size={22} />
-        </Pressable>
-        <Text variant="h4" className="flex-1 text-xl">
-          Broadcast
-        </Text>
-      </View>
+      <Gradient colors={violetGradient} style={{ paddingTop: insets.top + 8, paddingBottom: 16 }}>
+        <View className="flex-row items-center gap-2 px-3">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            className="h-10 w-10 items-center justify-center rounded-full active:opacity-70"
+            style={{ backgroundColor: 'rgba(0,0,0,0.25)' }}>
+            <Icon as={ArrowLeftIcon} size={20} color="#ffffff" />
+          </Pressable>
+          <View className="flex-1">
+            <Text className="text-xl font-black tracking-tight text-white">Broadcast</Text>
+            <Text className="text-xs font-medium text-white/80">Send one message to many clients</Text>
+          </View>
+          <Icon as={MegaphoneIcon} size={26} color="#ffffff" />
+        </View>
+      </Gradient>
 
       <View className="px-4 pt-3">
         <Input
@@ -189,7 +201,7 @@ export default function BroadcastScreen() {
           autoCorrect={false}
         />
         <View className="mt-3 flex-row items-center justify-between">
-          <Text variant="muted" className="text-sm">
+          <Text className="text-sm font-bold" style={{ color: COLORS.pink }}>
             {selected.size} selected
           </Text>
           <Button variant="link" size="sm" onPress={toggleAll} disabled={!clients || clients.length === 0}>
@@ -202,7 +214,7 @@ export default function BroadcastScreen() {
 
       <View
         className="gap-2 border-t border-border px-4 py-3"
-        style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+        style={{ paddingBottom: 12 }}>
         <Textarea
           placeholder="Message to send"
           value={content}
@@ -214,7 +226,8 @@ export default function BroadcastScreen() {
             Sending to {selected.size} client{selected.size === 1 ? '' : 's'}
           </Text>
           <Button disabled={sending || selected.size === 0 || !content.trim()} onPress={send}>
-            <Text className="text-sm font-medium">{sending ? 'Sending…' : 'Send broadcast'}</Text>
+            <Icon as={SendIcon} size={16} color="#04110A" />
+            <Text className="text-sm font-bold">{sending ? 'Sending…' : 'Send broadcast'}</Text>
           </Button>
         </View>
       </View>

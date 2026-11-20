@@ -121,7 +121,7 @@ function RootNavigator() {
   if (status === 'loading') {
     return (
       <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#2DD4BF" />
+        <ActivityIndicator size="large" color="#3ADD6C" />
       </View>
     );
   }
@@ -138,7 +138,7 @@ function RootNavigator() {
         onPress={() => {
           const fromNotice = latest === null && platformNotice !== null;
           dismissBanner();
-          router.push(fromNotice ? '/billing' : '/more/notifications');
+          router.push(fromNotice ? '/billing' : '/');
         }}
         onDismiss={dismissBanner}
       />

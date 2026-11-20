@@ -1,13 +1,13 @@
 import { useRouter } from 'expo-router';
-import { ChevronRightIcon, HeartPulseIcon, PlusIcon, Trash2Icon, UserIcon, WalletIcon } from 'lucide-react-native';
+import { ChevronRightIcon, HeartPulseIcon, PlusIcon, SearchIcon, Trash2Icon, UserIcon, UsersIcon, WalletIcon } from 'lucide-react-native';
 import * as React from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/app-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge, EmptyView, ErrorView, toneForMode } from '@/components/screen';
-import { SurfacePressable } from '@/components/section';
+import { alpha, Chip, COLORS, Panel } from '@/components/kit';
+import { EmptyView, ErrorView } from '@/components/screen';
 import { PhoneNumberInput } from '@/components/phone-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,6 +43,21 @@ const FILTERS = [
 
 type FilterKey = (typeof FILTERS)[number]['key'];
 
+const MODE_COLOR: Record<string, string> = {
+  paid: COLORS.green,
+  trial: COLORS.violet,
+  illustrative: COLORS.pink,
+};
+
+const FILTER_COLOR: Record<FilterKey, string> = {
+  all: COLORS.cyan,
+  paid: COLORS.green,
+  trial: COLORS.violet,
+  illustrative: COLORS.pink,
+  blocked: COLORS.rose,
+  inactive: COLORS.muted,
+};
+
 function Field({
   label,
   required,
@@ -76,41 +91,55 @@ function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () 
   // onboarding step, not a blocked account, so it gets a softer badge.
   const blocked = state === 'blocked_unpaid' || state === 'blocked_trial_expired';
   const needsPeriod = state === 'blocked_no_period';
+  const accent = blocked ? COLORS.rose : (MODE_COLOR[client.mode] ?? COLORS.green);
   return (
-    <SurfacePressable onPress={onPress} className="flex-row items-center gap-3 px-4 py-3 active:bg-secondary/60">
-      <Avatar alt={client.name}>
-        <AvatarImage source={{ uri: client.avatar_url }} />
-        <AvatarFallback>
-          <Text className="text-xs font-medium">{initials(client.name)}</Text>
-        </AvatarFallback>
-      </Avatar>
-      <View className="flex-1 gap-0.5">
-        <View className="flex-row items-center gap-2">
-          <Text
-            className={client.is_active ? 'font-medium' : 'font-medium opacity-60'}
-            numberOfLines={1}>
-            {client.name}
-          </Text>
-          {/* Feature 18: deactivated clients stay listed, marked inactive. */}
-          {!client.is_active ? <Badge label="Inactive" tone="default" /> : null}
-          {blocked ? <Badge label="Blocked" tone="danger" /> : null}
-          {needsPeriod ? <Badge label="No period yet" tone="warning" /> : null}
-        </View>
+    <Panel
+      onPress={onPress}
+      tint={client.is_active ? accent : undefined}
+      className="flex-row items-center gap-3 p-3.5">
+      <View
+        style={{
+          padding: 2,
+          borderRadius: 999,
+          borderWidth: 2,
+          borderColor: alpha(accent, client.is_active ? 0.9 : 0.3),
+        }}>
+        <Avatar alt={client.name} className="h-11 w-11">
+          <AvatarImage source={{ uri: client.avatar_url }} />
+          <AvatarFallback>
+            <Text className="text-sm font-black" style={{ color: accent }}>
+              {initials(client.name)}
+            </Text>
+          </AvatarFallback>
+        </Avatar>
+      </View>
+      <View className="min-w-0 flex-1 gap-1">
+        <Text
+          className={client.is_active ? 'text-[15px] font-bold' : 'text-[15px] font-bold opacity-60'}
+          numberOfLines={1}>
+          {client.name}
+        </Text>
         <Text variant="muted" className="text-xs" numberOfLines={1}>
           {client.phone || client.email}
         </Text>
+        <View className="flex-row flex-wrap items-center gap-1.5">
+          <Chip label={labelize(client.mode)} color={MODE_COLOR[client.mode] ?? COLORS.green} />
+          {/* Feature 18: deactivated clients stay listed, marked inactive. */}
+          {!client.is_active ? <Chip label="Inactive" color={COLORS.muted} /> : null}
+          {blocked ? <Chip label="Blocked" color={COLORS.rose} /> : null}
+          {needsPeriod ? <Chip label="No period yet" color={COLORS.amber} /> : null}
+        </View>
       </View>
-      <Badge label={labelize(client.mode)} tone={toneForMode[client.mode]} />
       {/* Feature 19: the trash icon removes the client completely —
           sessions, periods, payments, chat, diary, plans, everything. */}
       <Pressable
         hitSlop={10}
         onPress={() => onDelete(client)}
-        className="rounded-lg p-1.5 active:bg-destructive/10">
-        <Icon as={Trash2Icon} size={16} className="text-destructive" />
+        className="rounded-xl p-2 active:bg-destructive/10">
+        <Icon as={Trash2Icon} size={17} color={COLORS.rose} />
       </Pressable>
-      <Icon as={ChevronRightIcon} className="text-muted-foreground" size={18} />
-    </SurfacePressable>
+      <Icon as={ChevronRightIcon} size={18} color={COLORS.muted} />
+    </Panel>
   );
 }
 
@@ -385,39 +414,64 @@ export default function ClientsScreen() {
   }, [load]);
 
   const header = (
-    <View className="gap-5 pb-4">
+    <View className="gap-4 pb-4">
       <AppHeader />
-      <View className="flex-row items-end justify-center gap-2">
-        <Input
-          // w-64 (256px) + the w-44 filter column (176px) + gap overflowed the
-          // ~320px phone content width by ~120px → search bar drew off-screen.
-          // flex-1 shrinks to whatever space remains; max-w-64 keeps the
-          // original 256px cap on tablets/desktop.
-          className="h-11 min-w-0 max-w-64 flex-1 rounded-xl"
-          placeholder="Search name, phone or email…"
-          value={query}
-          onChangeText={setQuery}
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <View className="items-end gap-2">
-          <Button
-            size="lg"
-            onPress={() => setCreateOpen(true)}
-            className="h-11 rounded-xl px-4">
-            <Icon as={PlusIcon} size={18} />
-            <Text>Add client</Text>
-          </Button>
-          <Combobox
-            value={filter}
-            onValueChange={(value) => setFilter(value as FilterKey)}
-            options={FILTERS.map((f) => ({ value: f.key, label: f.label }))}
-            placeholder="Filter"
-            searchPlaceholder="Filter clients…"
-            className="w-44"
+      <View className="flex-row items-center justify-between gap-3">
+        <View className="min-w-0 flex-1">
+          <Text className="text-[28px] font-black tracking-tight">Clients</Text>
+          <Text variant="muted" className="text-[13px]">
+            {count != null ? `${count} on your roster` : 'Your roster'}
+          </Text>
+        </View>
+        <Pressable
+          onPress={() => setCreateOpen(true)}
+          accessibilityRole="button"
+          className="h-12 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-80"
+          style={{ backgroundColor: COLORS.green }}>
+          <Icon as={PlusIcon} size={18} color="#04110A" />
+          <Text className="text-sm font-black" style={{ color: '#04110A' }}>
+            Add client
+          </Text>
+        </Pressable>
+      </View>
+      <View className="flex-row items-center gap-2">
+        <View className="min-w-0 flex-1 justify-center">
+          <Input
+            className="h-12 rounded-2xl pl-11"
+            placeholder="Search name, phone or email…"
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
+          <View pointerEvents="none" className="absolute left-4">
+            <Icon as={SearchIcon} size={18} color={COLORS.muted} />
+          </View>
         </View>
       </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+        {FILTERS.map((f) => {
+          const active = f.key === filter;
+          const color = FILTER_COLOR[f.key];
+          return (
+            <Pressable
+              key={f.key}
+              onPress={() => setFilter(f.key)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              className="h-10 items-center justify-center rounded-full px-4 active:opacity-80"
+              style={{
+                backgroundColor: active ? color : alpha(color, 0.1),
+                borderWidth: 1,
+                borderColor: active ? color : alpha(color, 0.3),
+              }}>
+              <Text className="text-[13px] font-extrabold" style={{ color: active ? '#04110A' : color }}>
+                {f.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 
@@ -465,13 +519,15 @@ export default function ClientsScreen() {
           loading ? (
             <View className="gap-3">
               {[0, 1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-16 rounded-xl" />
+                <Skeleton key={i} className="h-24 rounded-3xl" />
               ))}
             </View>
           ) : error ? (
             <ErrorView error={error} onRetry={() => load('initial')} />
           ) : (
             <EmptyView
+              icon={UsersIcon}
+              color={COLORS.cyan}
               title="No clients yet"
               subtitle={debouncedSearch || filter !== 'all' ? 'No clients match your filters.' : 'Add your first client to get started.'}
             />
@@ -501,11 +557,7 @@ export default function ClientsScreen() {
         onRefresh={() => load('refresh')}
       />
       <View className="absolute bottom-6 right-4">
-        <View className="rounded-full border border-border bg-card px-4 py-2 shadow-lg shadow-black/10">
-          <Text variant="muted" className="text-xs font-medium">
-            {count != null ? `${count} total` : ''}
-          </Text>
-        </View>
+        {count != null ? <Chip label={`${count} total`} color={COLORS.cyan} /> : null}
       </View>
       <CreateClientDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => load('refresh')} />
     </View>

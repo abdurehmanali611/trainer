@@ -1,6 +1,6 @@
 import { useRouter, type Href } from 'expo-router';
+import { Image } from 'expo-image';
 import {
-  BellIcon,
   ChevronRightIcon,
   CircleUserIcon,
   LifeBuoyIcon,
@@ -12,34 +12,31 @@ import {
 import * as React from 'react';
 import { Pressable, View } from 'react-native';
 
+import { Gradient, powerGradient } from '@/components/gradient';
+import { alpha, COLORS, IconBubble, Panel } from '@/components/kit';
 import { Screen, ScreenHeader } from '@/components/screen';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { confirmAction } from '@/lib/confirm';
+import { initials } from '@/lib/format';
 
 type MenuRow = {
   key: string;
   label: string;
   subtitle: string;
   icon: LucideIcon;
+  color: string;
   href: Href;
 };
 
 const ROWS: MenuRow[] = [
   {
-    key: 'notifications',
-    label: 'Notifications',
-    subtitle: 'Bookings, payments and requests',
-    icon: BellIcon,
-    href: '/more/notifications',
-  },
-  {
     key: 'payment-instructions',
     label: 'Payment instructions',
     subtitle: 'Telebirr, bank and cash details',
     icon: WalletIcon,
+    color: COLORS.green,
     href: '/more/payment-instructions',
   },
   {
@@ -47,6 +44,7 @@ const ROWS: MenuRow[] = [
     label: 'Diary review',
     subtitle: 'Review client food diaries',
     icon: NotebookPenIcon,
+    color: COLORS.orange,
     href: '/more/diary-review',
   },
   {
@@ -54,6 +52,7 @@ const ROWS: MenuRow[] = [
     label: 'Support chat',
     subtitle: 'Talk to the admin team',
     icon: LifeBuoyIcon,
+    color: COLORS.cyan,
     href: '/support-chat',
   },
   {
@@ -61,6 +60,7 @@ const ROWS: MenuRow[] = [
     label: 'Profile',
     subtitle: 'Your details and settings',
     icon: CircleUserIcon,
+    color: COLORS.violet,
     href: '/more/profile',
   },
 ];
@@ -68,14 +68,6 @@ const ROWS: MenuRow[] = [
 export default function MoreScreen() {
   const router = useRouter();
   const { trainer, signOut } = useAuth();
-  const [unread, setUnread] = React.useState(0);
-
-  React.useEffect(() => {
-    api<{ unread: number }>('notifications/')
-      .then((res) => setUnread(res.unread))
-      .catch(() => setUnread(0));
-  }, []);
-
   function confirmSignOut() {
     void (async () => {
       const ok = await confirmAction({
@@ -92,45 +84,82 @@ export default function MoreScreen() {
     })();
   }
 
+  const name = trainer?.full_name?.trim() || trainer?.username || 'Trainer';
+
   return (
     <Screen>
       <ScreenHeader title="More" />
 
-      <View className="gap-1.5 rounded-2xl border border-border/70 bg-card p-2 shadow-sm shadow-black/[0.05] dark:shadow-black/30">
+      <Gradient colors={powerGradient} style={{ borderRadius: 28, overflow: 'hidden', marginBottom: 16 }}>
+        <View className="flex-row items-center gap-4 p-5">
+          {trainer?.avatar_url ? (
+            <Image
+              source={{ uri: trainer.avatar_url }}
+              style={{ width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: 'rgba(255,255,255,0.6)' }}
+              contentFit="cover"
+            />
+          ) : (
+            <View
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: 32,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0,0,0,0.25)',
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.5)',
+              }}>
+              <Text className="text-xl font-black text-white">{initials(name) || '?'}</Text>
+            </View>
+          )}
+          <View className="min-w-0 flex-1 gap-0.5">
+            <Text className="text-xl font-black tracking-tight text-white" numberOfLines={1}>
+              {name}
+            </Text>
+            {trainer?.gym_name ? (
+              <Text className="text-xs font-semibold text-white/80" numberOfLines={1}>
+                {trainer.gym_name}
+              </Text>
+            ) : null}
+            {trainer?.username ? (
+              <Text className="text-xs font-medium text-white/65" numberOfLines={1}>
+                @{trainer.username}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      </Gradient>
+
+      <Panel className="gap-1 p-2">
         {ROWS.map((row) => (
           <Pressable
             key={row.key}
             onPress={() => router.push(row.href)}
-            className="flex-row items-center gap-3 rounded-xl px-3 py-3 active:bg-accent/50">
-            <View className="h-9 w-9 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/15">
-              <Icon as={row.icon} size={18} className="text-primary" />
-            </View>
+            accessibilityRole="button"
+            className="flex-row items-center gap-3 rounded-2xl px-2 py-2.5 active:opacity-70">
+            <IconBubble icon={row.icon} color={row.color} size={40} />
             <View className="min-w-0 flex-1 gap-0.5">
-              <Text className="text-sm font-medium">{row.label}</Text>
+              <Text className="text-[15px] font-bold">{row.label}</Text>
               <Text variant="muted" className="text-xs" numberOfLines={1}>
                 {row.subtitle}
               </Text>
             </View>
-            {row.key === 'notifications' && unread > 0 ? (
-              <View className="rounded-full bg-destructive px-2 py-0.5">
-                <Text className="text-xs font-semibold text-white">{unread}</Text>
-              </View>
-            ) : null}
-            <Icon as={ChevronRightIcon} size={16} className="text-muted-foreground" />
+            <Icon as={ChevronRightIcon} size={18} color={COLORS.muted} />
           </Pressable>
         ))}
-      </View>
+      </Panel>
 
       <Pressable
         onPress={confirmSignOut}
-        className="mt-6 flex-row items-center gap-3 rounded-2xl border border-rose-500/25 bg-rose-500/[0.06] px-4 py-3.5 active:bg-rose-500/10">
-        <Icon as={LogOutIcon} size={20} className="text-destructive" />
-        <Text className="text-sm font-semibold text-destructive">Sign out</Text>
+        accessibilityRole="button"
+        className="mt-5 h-12 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+        style={{ backgroundColor: alpha(COLORS.rose, 0.12), borderWidth: 1, borderColor: alpha(COLORS.rose, 0.4) }}>
+        <Icon as={LogOutIcon} size={18} color={COLORS.rose} />
+        <Text className="text-sm font-bold" style={{ color: COLORS.rose }}>
+          Sign out
+        </Text>
       </Pressable>
-
-      <Text variant="muted" className="mt-4 text-center text-xs">
-        {[trainer?.full_name, trainer?.gym_name].filter(Boolean).join(' · ')}
-      </Text>
     </Screen>
   );
 }

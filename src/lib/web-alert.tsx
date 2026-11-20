@@ -103,7 +103,7 @@ const TONES: Record<
   error: { accent: '#F87171', onAccent: '#FFFFFF', icon: CircleXIcon },
   warning: { accent: '#FBBF24', onAccent: '#1A1203', icon: TriangleAlertIcon },
   danger: { accent: '#F87171', onAccent: '#FFFFFF', icon: TriangleAlertIcon },
-  question: { accent: '#2DD4BF', onAccent: '#04110F', icon: CircleQuestionMarkIcon },
+  question: { accent: '#3ADD6C', onAccent: '#04110A', icon: CircleQuestionMarkIcon },
   info: { accent: '#38BDF8', onAccent: '#031019', icon: InfoIcon },
 };
 

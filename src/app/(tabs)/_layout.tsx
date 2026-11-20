@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/build/layouts/Tabs';
-import { Pressable, useColorScheme, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import {
   BadgeCheckIcon,
   CalendarDaysIcon,
@@ -10,16 +10,17 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 
+import { alpha, COLORS } from '@/components/kit';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 
 /** Visible bottom tabs, in order. Everything else renders no tab button. */
-const TAB_ITEMS: { name: string; label: string; icon: LucideIcon }[] = [
-  { name: 'index', label: 'Home', icon: LayoutDashboardIcon },
-  { name: 'clients', label: 'Clients', icon: UsersIcon },
-  { name: 'plans', label: 'Plans', icon: DumbbellIcon },
-  { name: 'schedule', label: 'Schedule', icon: CalendarDaysIcon },
-  { name: 'remark', label: 'Remark', icon: BadgeCheckIcon },
+const TAB_ITEMS: { name: string; label: string; icon: LucideIcon; color: string }[] = [
+  { name: 'index', label: 'Home', icon: LayoutDashboardIcon, color: COLORS.green },
+  { name: 'clients', label: 'Clients', icon: UsersIcon, color: COLORS.cyan },
+  { name: 'plans', label: 'Plans', icon: DumbbellIcon, color: COLORS.violet },
+  { name: 'schedule', label: 'Schedule', icon: CalendarDaysIcon, color: COLORS.amber },
+  { name: 'remark', label: 'Remark', icon: BadgeCheckIcon, color: COLORS.pink },
 ];
 
 // Moved into the top-right header menu instead of the bottom tab bar.
@@ -40,16 +41,15 @@ const HIDDEN_ROUTES = new Set(['chat', 'client', 'support-chat', 'more', 'plan']
  * spread evenly across the whole screen width — never hugging the left edge.
  */
 function TrainerTabBar({ state, descriptors, emitter, navigateToTab, insets }: BottomTabBarProps) {
-  const scheme = useColorScheme();
-  const dark = scheme === 'dark';
-  const tint = dark ? '#22D3EE' : '#0891B2';
-  const untinted = dark ? '#64748B' : '#94A3B8';
+  const untinted = '#64748B';
 
   return (
     <View
       accessibilityRole="tablist"
-      className="flex-row items-stretch justify-around border-t border-border bg-card/95 pt-2"
+      className="flex-row items-stretch justify-around border-t pt-2"
       style={{
+        backgroundColor: '#0B1220',
+        borderTopColor: alpha(COLORS.green, 0.16),
         width: '100%',
         maxWidth: '100%',
         alignSelf: 'stretch',
@@ -63,7 +63,7 @@ function TrainerTabBar({ state, descriptors, emitter, navigateToTab, insets }: B
 
         const focused = state.index === index;
         const label = descriptors[route.key]?.options?.title ?? item.label;
-        const color = focused ? tint : untinted;
+        const color = focused ? item.color : untinted;
 
         const onPress = () => {
           const event = emitter.emit({
@@ -90,10 +90,11 @@ function TrainerTabBar({ state, descriptors, emitter, navigateToTab, insets }: B
             style={{ flex: 1, flexGrow: 1, flexBasis: 0, minWidth: 0 }}
             testID={`tab-${route.name}`}>
             <View
-              className={
+              className="items-center justify-center rounded-2xl px-4 py-1.5"
+              style={
                 focused
-                  ? 'items-center justify-center rounded-lg bg-primary/15 px-3.5 py-1.5'
-                  : 'items-center justify-center px-3.5 py-1.5'
+                  ? { backgroundColor: alpha(item.color, 0.16), borderWidth: 1, borderColor: alpha(item.color, 0.35) }
+                  : { borderWidth: 1, borderColor: 'transparent' }
               }>
               <Icon as={item.icon} size={22} color={color} />
             </View>

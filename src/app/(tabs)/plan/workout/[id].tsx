@@ -2,6 +2,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowDownIcon,
   CalendarDaysIcon,
+  CheckCircle2Icon,
+  CloudUploadIcon,
   DumbbellIcon,
   ArrowUpIcon,
   PencilIcon,
@@ -11,7 +13,9 @@ import {
 import * as React from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 
-import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
+import { Gradient, violetGradient } from '@/components/gradient';
+import { alpha, Chip, COLORS, IconBubble, SectionHeader } from '@/components/kit';
+import { ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -384,65 +388,99 @@ export default function WorkoutPlanScreen() {
       <Stack.Screen options={{ title: name || 'Workout plan' }} />
       <Screen refreshing={refreshing} onRefresh={() => void load()}>
         <View className="gap-6">
-          <View className="gap-3">
-            <View className="flex-row flex-wrap items-center gap-2">
-              <Badge label={plan.is_template ? 'Template' : 'Assigned'} tone={plan.is_template ? 'info' : 'success'} />
-              {!plan.is_template && plan.client_name ? (
-                <Text variant="muted">{plan.client_name}</Text>
-              ) : null}
+          <Gradient colors={violetGradient} style={{ borderRadius: 28, overflow: 'hidden' }}>
+            <View className="gap-3 p-5">
+              <View className="flex-row flex-wrap items-center gap-2">
+                <View className="rounded-full bg-black/25 px-3 py-1">
+                  <Text className="text-xs font-bold text-white">
+                    {plan.is_template ? 'Template' : 'Assigned'}
+                  </Text>
+                </View>
+                {!plan.is_template && plan.client_name ? (
+                  <Text className="text-sm font-semibold text-white/85">{plan.client_name}</Text>
+                ) : null}
+                <View className="ml-auto flex-row items-center gap-1.5">
+                  <Icon
+                    as={saveError ? CloudUploadIcon : CheckCircle2Icon}
+                    size={14}
+                    color={saveError ? '#FECACA' : 'rgba(255,255,255,0.85)'}
+                  />
+                  {saveError ? (
+                    <Text
+                      className="text-xs font-bold text-white underline"
+                      onPress={() => {
+                        setSaveError(null);
+                        void save();
+                      }}>
+                      Autosave failed — tap to retry
+                    </Text>
+                  ) : (
+                    <Text className="text-xs font-semibold text-white/85">
+                      {saving ? 'Saving…' : 'All changes saved'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <Input
+                placeholder="Plan name"
+                value={name}
+                onChangeText={(v) => {
+                  setName(v);
+                  setDirty(true);
+                }}
+                autoCapitalize="words"
+                style={{ backgroundColor: 'rgba(0,0,0,0.28)', borderColor: 'rgba(255,255,255,0.25)', color: '#fff' }}
+                placeholderTextColor="rgba(255,255,255,0.6)"
+              />
+              <View className="flex-row flex-wrap gap-2">
+                {!plan.is_template ? (
+                  <Pressable
+                    onPress={() => void saveAsTemplate()}
+                    className="h-10 items-center justify-center rounded-2xl px-4 active:opacity-80"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                    <Text className="text-sm font-bold text-white">Save as template</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  onPress={confirmDeletePlan}
+                  className="h-10 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-80"
+                  style={{ backgroundColor: alpha(COLORS.rose, 0.9) }}>
+                  <Icon as={Trash2Icon} size={15} color="#fff" />
+                  <Text className="text-sm font-bold text-white">Delete</Text>
+                </Pressable>
+              </View>
             </View>
-            <Input
-              placeholder="Plan name"
-              value={name}
-              onChangeText={(v) => {
-                setName(v);
-                setDirty(true);
+          </Gradient>
+
+          <View className="gap-3">
+            <SectionHeader
+              title="Training days"
+              subtitle={`${plan.days.length} day${plan.days.length === 1 ? '' : 's'}`}
+              icon={CalendarDaysIcon}
+              color={COLORS.violet}
+              actionLabel="Add day"
+              onAction={() => {
+                setDayName('');
+                setAddDayOpen(true);
               }}
-              autoCapitalize="words"
             />
-            <View className="flex-row flex-wrap gap-2">
-              {!plan.is_template ? (
-                <Button variant="outline" size="sm" onPress={() => void saveAsTemplate()}>
-                  <Text>Save as template</Text>
-                </Button>
-              ) : null}
-              <Button variant="destructive" size="sm" onPress={confirmDeletePlan}>
-                <Icon as={Trash2Icon} size={16} />
-                <Text>Delete</Text>
-              </Button>
-            </View>
-          </View>
-
-          <View className="gap-1.5">
-            {saveError ? (
-              <Text
-                className="text-sm text-destructive underline"
-                onPress={() => {
-                  setSaveError(null);
-                  void save();
-                }}>
-                Autosave failed — tap to retry
-              </Text>
-            ) : (
-              <Text variant="muted">{saving ? 'Saving…' : 'All changes saved'}</Text>
-            )}
-          </View>
-
-          <View className="gap-3">
-            <View className="flex-row items-center justify-between">
-              <Text variant="h4">Days</Text>
-              <Button variant="outline" size="sm" onPress={() => { setDayName(''); setAddDayOpen(true); }}>
-                <Icon as={PlusIcon} size={16} />
-                <Text>Add day</Text>
-              </Button>
-            </View>
 
             {plan.days.length === 0 ? (
               <Text variant="muted">No days yet. Add a day to start building the plan.</Text>
             ) : (
               plan.days.map((day, dayIndex) => (
-                <View key={`day-${dayIndex}`} className="gap-3 rounded-xl border border-border bg-card p-4">
+                <View
+                  key={`day-${dayIndex}`}
+                  className="gap-3 rounded-3xl border p-4"
+                  style={{ backgroundColor: alpha(COLORS.violet, 0.07), borderColor: alpha(COLORS.violet, 0.28) }}>
                   <View className="flex-row items-center gap-2">
+                    <View
+                      className="h-9 w-9 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: alpha(COLORS.violet, 0.2) }}>
+                      <Text className="text-sm font-black" style={{ color: COLORS.violet }}>
+                        {dayIndex + 1}
+                      </Text>
+                    </View>
                     <Input
                       className="flex-1"
                       value={day.day_name}
@@ -454,7 +492,7 @@ export default function WorkoutPlanScreen() {
                       autoCapitalize="words"
                     />
                     <Pressable hitSlop={8} onPress={() => deleteDay(dayIndex)}>
-                      <Icon as={Trash2Icon} size={18} className="text-destructive" />
+                      <Icon as={Trash2Icon} size={18} color={COLORS.rose} />
                     </Pressable>
                   </View>
 
@@ -466,25 +504,25 @@ export default function WorkoutPlanScreen() {
                     day.exercises.map((ex, exIndex) => (
                       <View
                         key={`ex-${dayIndex}-${exIndex}`}
-                        className="flex-row items-center gap-2 rounded-lg border border-border bg-background p-2.5">
+                        className="flex-row items-center gap-2 rounded-2xl border border-border bg-background p-2.5">
                         <View className="gap-1">
                           <Pressable
                             hitSlop={6}
                             disabled={exIndex === 0}
                             onPress={() => moveExercise(dayIndex, exIndex, -1)}
                             className={cn(exIndex === 0 && 'opacity-30')}>
-                            <Icon as={ArrowUpIcon} size={16} />
+                            <Icon as={ArrowUpIcon} size={16} color={COLORS.muted} />
                           </Pressable>
                           <Pressable
                             hitSlop={6}
                             disabled={exIndex === day.exercises.length - 1}
                             onPress={() => moveExercise(dayIndex, exIndex, 1)}
                             className={cn(exIndex === day.exercises.length - 1 && 'opacity-30')}>
-                            <Icon as={ArrowDownIcon} size={16} />
+                            <Icon as={ArrowDownIcon} size={16} color={COLORS.muted} />
                           </Pressable>
                         </View>
                         <View className="min-w-0 flex-1 gap-0.5">
-                          <Text className="text-sm font-medium" numberOfLines={1}>
+                          <Text className="text-sm font-bold" numberOfLines={1}>
                             {ex.exercise_detail?.name ?? `Exercise #${ex.exercise}`}
                           </Text>
                           <Text variant="muted" className="text-xs" numberOfLines={1}>
@@ -499,19 +537,25 @@ export default function WorkoutPlanScreen() {
                           </Text>
                         </View>
                         <Pressable hitSlop={6} onPress={() => editExercise(dayIndex, exIndex)}>
-                          <Icon as={PencilIcon} size={16} className="text-muted-foreground" />
+                          <Icon as={PencilIcon} size={16} color={COLORS.sky} />
                         </Pressable>
                         <Pressable hitSlop={6} onPress={() => removeExercise(dayIndex, exIndex)}>
-                          <Icon as={Trash2Icon} size={16} className="text-destructive" />
+                          <Icon as={Trash2Icon} size={16} color={COLORS.rose} />
                         </Pressable>
                       </View>
                     ))
                   )}
 
-                  <Button variant="outline" size="sm" onPress={() => openPicker(dayIndex)}>
-                    <Icon as={PlusIcon} size={16} />
-                    <Text>Add exercise</Text>
-                  </Button>
+                  <Pressable
+                    onPress={() => openPicker(dayIndex)}
+                    accessibilityRole="button"
+                    className="h-11 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+                    style={{ backgroundColor: alpha(COLORS.violet, 0.16), borderWidth: 1, borderColor: alpha(COLORS.violet, 0.4) }}>
+                    <Icon as={PlusIcon} size={16} color={COLORS.violet} />
+                    <Text className="text-sm font-black" style={{ color: COLORS.violet }}>
+                      Add exercise
+                    </Text>
+                  </Pressable>
                 </View>
               ))
             )}
@@ -574,15 +618,14 @@ export default function WorkoutPlanScreen() {
                 <Pressable
                   key={g}
                   onPress={() => setGroup(g)}
-                  className={cn(
-                    'h-9 items-center justify-center rounded-full border px-4',
-                    group === g ? 'border-primary bg-primary' : 'border-border bg-secondary'
-                  )}>
+                  className="h-9 items-center justify-center rounded-full border px-4"
+                  style={{
+                    backgroundColor: group === g ? COLORS.violet : alpha(COLORS.violet, 0.1),
+                    borderColor: group === g ? COLORS.violet : alpha(COLORS.violet, 0.3),
+                  }}>
                   <Text
-                    className={cn(
-                      'text-sm font-medium',
-                      group === g ? 'text-primary-foreground' : 'text-foreground'
-                    )}>
+                    className="text-sm font-bold"
+                    style={{ color: group === g ? '#12091F' : COLORS.violet }}>
                     {g}
                   </Text>
                 </Pressable>
@@ -604,16 +647,18 @@ export default function WorkoutPlanScreen() {
                   <Pressable
                     key={exercise.id}
                     onPress={() => pickExercise(exercise)}
-                    className="flex-row items-center gap-3 rounded-lg border border-border p-3 active:bg-accent">
-                    <View className="min-w-0 flex-1 gap-0.5">
-                      <Text className="text-sm font-medium" numberOfLines={1}>
+                    className="flex-row items-center gap-3 rounded-2xl border border-border p-3 active:bg-accent">
+                    <IconBubble icon={DumbbellIcon} color={COLORS.violet} size={38} />
+                    <View className="min-w-0 flex-1 gap-1">
+                      <Text className="text-sm font-bold" numberOfLines={1}>
                         {exercise.name}
                       </Text>
-                      <Text variant="muted" className="text-xs">
-                        {[exercise.muscle_group, exercise.difficulty].filter(Boolean).join(' · ')}
-                      </Text>
+                      <View className="flex-row flex-wrap gap-1.5">
+                        {exercise.muscle_group ? <Chip label={exercise.muscle_group} color={COLORS.violet} /> : null}
+                        {exercise.difficulty ? <Chip label={exercise.difficulty} color={COLORS.amber} /> : null}
+                      </View>
                     </View>
-                    <Icon as={PlusIcon} size={16} className="text-muted-foreground" />
+                    <Icon as={PlusIcon} size={18} color={COLORS.green} />
                   </Pressable>
                 ))}
               </View>

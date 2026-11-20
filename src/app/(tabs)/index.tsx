@@ -1,39 +1,47 @@
 import { useRouter } from 'expo-router';
-import { ChevronRightIcon, DumbbellIcon } from 'lucide-react-native';
+import {
+  AlertTriangleIcon,
+  BadgeDollarSignIcon,
+  BanIcon,
+  CalendarCheckIcon,
+  ChevronRightIcon,
+  ClockIcon,
+  CoinsIcon,
+  FlameIcon,
+  HeartPulseIcon,
+  HourglassIcon,
+  ReceiptTextIcon,
+  SparklesIcon,
+  TrendingUpIcon,
+  UserCheckIcon,
+  UserMinusIcon,
+  UsersIcon,
+  VideoIcon,
+  type LucideIcon,
+} from 'lucide-react-native';
 import * as React from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { HeroCard } from '@/components/gradient';
-import { Badge, ErrorView, LoadingView, Screen, toneForSession } from '@/components/screen';
-import { Section, StatTile } from '@/components/section';
+import { alpha, Chip, COLORS, IconBubble, Panel, Ring, SectionHeader, StatTile } from '@/components/kit';
+import { Badge, EmptyView, ErrorView, LoadingView, Screen, toneForSession } from '@/components/screen';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { clockTime, dayLabel, shortDate, todayISO } from '@/lib/dates';
-import { formatMoney, labelize } from '@/lib/format';
+import { formatMoney, initials, labelize } from '@/lib/format';
 import type { DashboardData, WorkloadData } from '@/lib/types';
 
 interface StatItem {
   label: string;
   value: string;
-  tone?: React.ComponentProps<typeof StatTile>['tone'];
+  icon: LucideIcon;
+  color: string;
+  href?: string;
 }
 
-const STAT_TONES: Record<string, React.ComponentProps<typeof StatTile>['tone']> = {
-  'Total clients': 'default',
-  Paid: 'default',
-  Trial: 'default',
-  Illustrative: 'muted',
-  'Payment due': 'warning',
-  Blocked: 'danger',
-  Inactive: 'muted',
-  'Needs period': 'warning',
-  'Unpaid invoices': 'warning',
-  'Revenue this month': 'default',
-};
-
-function StatGrid({ stats }: { stats: StatItem[] }) {
+function StatGrid({ stats, onOpen }: { stats: StatItem[]; onOpen: (href: string) => void }) {
   const rows: StatItem[][] = [];
   for (let i = 0; i < stats.length; i += 2) rows.push(stats.slice(i, i + 2));
   return (
@@ -41,12 +49,15 @@ function StatGrid({ stats }: { stats: StatItem[] }) {
       {rows.map((row, index) => (
         <View key={index} className="flex-row gap-3">
           {row.map((stat) => (
-            <StatTile
-              key={stat.label}
-              label={stat.label}
-              value={stat.value}
-              tone={stat.tone ?? STAT_TONES[stat.label] ?? 'default'}
-            />
+            <View key={stat.label} className="flex-1">
+              <StatTile
+                icon={stat.icon}
+                label={stat.label}
+                value={stat.value}
+                color={stat.color}
+                onPress={stat.href ? () => onOpen(stat.href as string) : undefined}
+              />
+            </View>
           ))}
           {row.length === 1 ? <View className="flex-1" /> : null}
         </View>
@@ -57,9 +68,11 @@ function StatGrid({ stats }: { stats: StatItem[] }) {
 
 function BarChart({
   data,
+  color = COLORS.green,
   formatValue,
 }: {
   data: { label: string; value: number; highlight?: boolean }[];
+  color?: string;
   formatValue?: (value: number) => string;
 }) {
   const max = Math.max(1, ...data.map((d) => d.value));
@@ -67,14 +80,25 @@ function BarChart({
     <View className="flex-row items-end gap-2">
       {data.map((d) => (
         <View key={d.label} className="flex-1 items-center gap-1">
-          <View className="h-24 w-full items-center justify-end">
+          <View className="h-28 w-full items-center justify-end">
             <View
-              className={d.highlight ? 'w-full rounded-md bg-primary' : 'w-full rounded-md bg-primary/35'}
-              style={{ height: Math.max(4, Math.round((d.value / max) * 96)) }}
+              style={{
+                width: '100%',
+                borderRadius: 10,
+                height: Math.max(6, Math.round((d.value / max) * 112)),
+                backgroundColor: d.highlight ? color : alpha(color, 0.3),
+              }}
             />
           </View>
-          <Text className="text-xs text-muted-foreground">{d.label}</Text>
-          <Text className="text-xs font-medium">{formatValue ? formatValue(d.value) : String(d.value)}</Text>
+          <Text
+            className="text-[11px] font-bold"
+            style={{ color: d.highlight ? color : COLORS.muted }}
+            numberOfLines={1}>
+            {d.label}
+          </Text>
+          <Text className="text-[11px] font-black" numberOfLines={1}>
+            {formatValue ? formatValue(d.value) : String(d.value)}
+          </Text>
         </View>
       ))}
     </View>
@@ -121,60 +145,67 @@ export default function DashboardScreen() {
 
   const stats: StatItem[] = dashboard
     ? [
-        { label: 'Total clients', value: String(dashboard.counts.total) },
-        { label: 'Paid', value: String(dashboard.counts.paid) },
-        { label: 'Trial', value: String(dashboard.counts.trial) },
-        { label: 'Illustrative', value: String(dashboard.counts.illustrative) },
-        { label: 'Payment due', value: String(dashboard.counts.payment_due) },
-        { label: 'Blocked', value: String(dashboard.counts.blocked) },
-        { label: 'Needs period', value: String(dashboard.counts.needs_period ?? 0) },
-        { label: 'Inactive', value: String(dashboard.counts.inactive) },
-        { label: 'Unpaid invoices', value: String(dashboard.unpaid_invoices) },
-        { label: 'Revenue this month', value: formatMoney(dashboard.revenue_this_month) },
+        { label: 'Total clients', value: String(dashboard.counts.total), icon: UsersIcon, color: COLORS.cyan, href: '/clients' },
+        { label: 'Paid', value: String(dashboard.counts.paid), icon: BadgeDollarSignIcon, color: COLORS.green, href: '/clients' },
+        { label: 'Trial', value: String(dashboard.counts.trial), icon: SparklesIcon, color: COLORS.violet, href: '/clients' },
+        { label: 'Illustrative', value: String(dashboard.counts.illustrative), icon: HeartPulseIcon, color: COLORS.pink, href: '/clients' },
+        { label: 'Payment due', value: String(dashboard.counts.payment_due), icon: HourglassIcon, color: COLORS.amber, href: '/billing' },
+        { label: 'Blocked', value: String(dashboard.counts.blocked), icon: BanIcon, color: COLORS.rose, href: '/clients' },
+        { label: 'Needs period', value: String(dashboard.counts.needs_period ?? 0), icon: AlertTriangleIcon, color: COLORS.orange },
+        { label: 'Inactive', value: String(dashboard.counts.inactive), icon: UserMinusIcon, color: COLORS.muted },
+        { label: 'Unpaid invoices', value: String(dashboard.unpaid_invoices), icon: ReceiptTextIcon, color: COLORS.amber, href: '/billing' },
+        { label: 'Revenue this month', value: formatMoney(dashboard.revenue_this_month), icon: CoinsIcon, color: COLORS.lime, href: '/billing' },
       ]
     : [];
 
   const retention = dashboard?.retention_rate;
   const retentionValue = retention?.value ?? null;
-  const retentionLabel =
-    retentionValue == null ? '—' : `${retentionValue <= 1 ? Math.round(retentionValue * 100) : Math.round(retentionValue)}%`;
+  const retentionPct = retentionValue == null ? null : retentionValue <= 1 ? retentionValue : retentionValue / 100;
+  const retentionLabel = retentionPct == null ? '—' : `${Math.round(retentionPct * 100)}%`;
+
+  const todaySessions = dashboard?.today_sessions ?? [];
+  const activeShare =
+    dashboard && dashboard.counts.total > 0
+      ? (dashboard.counts.total - dashboard.counts.inactive) / dashboard.counts.total
+      : 0;
+
+  const heroTiles = [
+    { v: String(todaySessions.length), l: 'Sessions today', i: CalendarCheckIcon },
+    { v: String(dashboard?.counts.total ?? 0), l: 'Clients', i: UsersIcon },
+    { v: dashboard ? formatMoney(dashboard.revenue_this_month) : '—', l: 'This month', i: TrendingUpIcon },
+  ];
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => load('refresh')}>
-      <HeroCard className="mb-5 mt-5">
+      <HeroCard className="mb-5 gap-4">
         <View className="flex-row items-center justify-between gap-3">
-          <View className="flex-1">
-            <Text className="text-xs font-semibold uppercase tracking-wider text-white/70">
+          <View className="min-w-0 flex-1">
+            <Text className="text-xs font-bold uppercase tracking-widest text-white/75">
               {dayLabel(todayISO())}
             </Text>
-            <Text className="mt-1 text-2xl font-semibold tracking-tight text-white">
+            <Text className="mt-1 text-[22px] font-black leading-7 tracking-tight text-white" numberOfLines={2}>
               {greeting}, {name.split(' ')[0]}
             </Text>
-            <Text className="mt-1 text-sm text-white/75">
-              Here&apos;s your coaching day at a glance.
+            <Text className="mt-1 text-sm text-white/80">
+              {todaySessions.length > 0
+                ? `You have ${todaySessions.length} session${todaySessions.length === 1 ? '' : 's'} today.`
+                : 'Light day — a good time to plan ahead.'}
             </Text>
           </View>
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
-            <Icon as={DumbbellIcon} color="#ffffff" size={24} />
+          <View className="h-14 w-14 items-center justify-center rounded-3xl bg-white/20">
+            <Icon as={FlameIcon} color="#ffffff" size={28} />
           </View>
         </View>
-        <View className="mt-4 flex-row gap-3">
-          <View className="flex-1 rounded-2xl bg-white/15 p-3">
-            <Text className="text-xl font-bold text-white">
-              {dashboard?.today_sessions.length ?? 0}
-            </Text>
-            <Text className="text-xs text-white/80">Sessions today</Text>
-          </View>
-          <View className="flex-1 rounded-2xl bg-white/15 p-3">
-            <Text className="text-xl font-bold text-white">{dashboard?.counts.total ?? 0}</Text>
-            <Text className="text-xs text-white/80">Active clients</Text>
-          </View>
-          <View className="flex-1 rounded-2xl bg-white/15 p-3">
-            <Text className="text-xl font-bold text-white">
-              {dashboard ? formatMoney(dashboard.revenue_this_month) : '—'}
-            </Text>
-            <Text className="text-xs text-white/80">This month</Text>
-          </View>
+        <View className="flex-row gap-2.5">
+          {heroTiles.map((t) => (
+            <View key={t.l} className="flex-1 gap-1 rounded-2xl bg-black/20 p-3">
+              <Icon as={t.i} color="#ffffff" size={15} />
+              <Text className="text-lg font-black text-white" numberOfLines={1}>
+                {t.v}
+              </Text>
+              <Text className="text-[11px] font-semibold text-white/75">{t.l}</Text>
+            </View>
+          ))}
         </View>
       </HeroCard>
 
@@ -184,107 +215,174 @@ export default function DashboardScreen() {
         </View>
       ) : null}
 
-      <View className="gap-4">
-        <Section title="Overview">
-          <StatGrid stats={stats} />
-        </Section>
+      <View className="gap-5">
+        {/* Today's sessions first — it's what a coach checks every morning */}
+        <View>
+          <SectionHeader
+            title="Today's sessions"
+            subtitle={todaySessions.length ? 'Tap a session to open the client' : undefined}
+            icon={ClockIcon}
+            color={COLORS.amber}
+            actionLabel="Schedule"
+            onAction={() => router.push('/schedule')}
+          />
+          {todaySessions.length > 0 ? (
+            <View className="gap-2.5">
+              {todaySessions.map((s) => {
+                const accent = s.is_online ? COLORS.cyan : COLORS.amber;
+                return (
+                  <Panel
+                    key={s.id}
+                    tint={accent}
+                    onPress={() => router.push(`/client/${s.client_id}`)}
+                    className="flex-row items-center gap-3 p-3.5">
+                    <View
+                      className="items-center justify-center rounded-2xl px-2.5 py-2"
+                      style={{ backgroundColor: alpha(accent, 0.16) }}>
+                      <Text className="text-sm font-black" style={{ color: accent }}>
+                        {clockTime(s.time)}
+                      </Text>
+                    </View>
+                    <View className="min-w-0 flex-1 gap-0.5">
+                      <Text className="text-[15px] font-bold" numberOfLines={1}>
+                        {s.client_name}
+                      </Text>
+                      <View className="flex-row items-center gap-1">
+                        <Icon as={s.is_online ? VideoIcon : UserCheckIcon} size={12} color={COLORS.muted} />
+                        <Text variant="muted" className="text-xs">
+                          {s.duration_minutes} min · {s.is_online ? 'Online' : 'In person'}
+                        </Text>
+                      </View>
+                    </View>
+                    <Badge label={labelize(s.status)} tone={toneForSession[s.status]} />
+                  </Panel>
+                );
+              })}
+            </View>
+          ) : (
+            <EmptyView
+              icon={CalendarCheckIcon}
+              color={COLORS.amber}
+              title="Nothing scheduled today"
+              subtitle="Enjoy the breathing room, or book a session from the Schedule tab."
+            />
+          )}
+        </View>
+
+        <View>
+          <SectionHeader title="Overview" subtitle="Your roster at a glance" icon={UsersIcon} color={COLORS.cyan} />
+          <StatGrid stats={stats} onOpen={(href) => router.push(href as never)} />
+        </View>
 
         {workload ? (
-          <Section title="Sessions this week">
+          <Panel className="gap-4">
+            <View className="flex-row items-center justify-between gap-3">
+              <View className="flex-row items-center gap-2.5">
+                <IconBubble icon={CalendarCheckIcon} color={COLORS.green} size={32} />
+                <Text className="text-[15px] font-bold tracking-tight">Sessions this week</Text>
+              </View>
+              <Chip label={`${workload.totals.sessions} total`} color={COLORS.green} />
+            </View>
             <BarChart
               data={workload.days.map((d) => ({ label: d.label, value: d.sessions, highlight: d.is_today }))}
             />
-            <View className="flex-row flex-wrap gap-x-4 gap-y-1">
-              <Text variant="muted" className="text-xs">
-                {workload.totals.sessions} sessions
-              </Text>
-              <Text variant="muted" className="text-xs">
-                {workload.totals.hours} hours
-              </Text>
-              <Text variant="muted" className="text-xs">
-                {workload.totals.avg_sessions_per_day} per day avg
-              </Text>
+            <View className="flex-row gap-2">
+              <Chip label={`${workload.totals.hours} hours`} color={COLORS.sky} />
+              <Chip label={`${workload.totals.avg_sessions_per_day} per day`} color={COLORS.violet} />
             </View>
-          </Section>
+          </Panel>
         ) : null}
 
         {dashboard && dashboard.revenue_by_channel.length > 0 ? (
-          <Section title="Revenue by channel">
+          <Panel className="gap-4">
+            <View className="flex-row items-center gap-2.5">
+              <IconBubble icon={CoinsIcon} color={COLORS.lime} size={32} />
+              <Text className="text-[15px] font-bold tracking-tight">Revenue by channel</Text>
+            </View>
             <BarChart
+              color={COLORS.lime}
               data={dashboard.revenue_by_channel.map((c) => ({ label: labelize(c.channel), value: c.total }))}
               formatValue={formatMoney}
             />
-          </Section>
+          </Panel>
         ) : null}
 
-        {retention ? (
-          <Section title="Retention">
-            <View className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary p-3.5">
-              <Text className="text-3xl font-semibold text-foreground">{retentionLabel}</Text>
-              <View className="gap-0.5">
-                <Text variant="muted" className="text-xs">
+        <View className="flex-row gap-3">
+          {retention ? (
+            <Panel tint={COLORS.violet} className="flex-1 items-center gap-3">
+              <Ring progress={retentionPct ?? 0} size={92} stroke={10} color={COLORS.violet}>
+                <Text className="text-xl font-black">{retentionLabel}</Text>
+              </Ring>
+              <View className="items-center gap-0.5">
+                <Text className="text-sm font-bold">Retention</Text>
+                <Text variant="muted" className="text-center text-[11px]">
                   {retention.started} started · {retention.lost} lost
                 </Text>
-                <Text variant="muted" className="text-xs">
+                <Text variant="muted" className="text-[11px]">
                   Last {retention.window_days} days
                 </Text>
               </View>
+            </Panel>
+          ) : null}
+          <Panel tint={COLORS.green} className="flex-1 items-center gap-3">
+            <Ring progress={activeShare} size={92} stroke={10} color={COLORS.green}>
+              <Text className="text-xl font-black">{Math.round(activeShare * 100)}%</Text>
+            </Ring>
+            <View className="items-center gap-0.5">
+              <Text className="text-sm font-bold">Active clients</Text>
+              <Text variant="muted" className="text-center text-[11px]">
+                {dashboard ? dashboard.counts.total - dashboard.counts.inactive : 0} of {dashboard?.counts.total ?? 0}
+              </Text>
             </View>
-          </Section>
-        ) : null}
+          </Panel>
+        </View>
 
-        <Section title="Today's sessions">
-          {dashboard && dashboard.today_sessions.length > 0 ? (
-            <View className="gap-2">
-              {dashboard.today_sessions.map((s) => (
-                <Pressable
-                  key={s.id}
-                  onPress={() => router.push(`/client/${s.client_id}`)}
-                  className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary px-3 py-3 active:opacity-80">
-                  <View className="w-16">
-                    <Text className="text-sm font-medium">{clockTime(s.time)}</Text>
-                  </View>
-                  <View className="flex-1 gap-0.5">
-                    <Text className="text-sm" numberOfLines={1}>
-                      {s.client_name}
-                    </Text>
-                    <Text variant="muted" className="text-xs">
-                      {s.duration_minutes} min · {s.is_online ? 'Online' : 'In person'}
-                    </Text>
-                  </View>
-                  <Badge label={labelize(s.status)} tone={toneForSession[s.status]} />
-                </Pressable>
-              ))}
-            </View>
-          ) : (
-            <Text variant="muted">No sessions scheduled today.</Text>
-          )}
-        </Section>
-
-        <Section title={`Inactive over ${dashboard?.inactive_threshold_days ?? 7} days`}>
+        <View>
+          <SectionHeader
+            title={`Inactive over ${dashboard?.inactive_threshold_days ?? 7} days`}
+            subtitle="Clients who may need a nudge"
+            icon={UserMinusIcon}
+            color={COLORS.rose}
+          />
           {dashboard && dashboard.inactive_clients.length > 0 ? (
-            <View className="gap-2">
+            <View className="gap-2.5">
               {dashboard.inactive_clients.map((c) => (
-                <Pressable
+                <Panel
                   key={c.id}
                   onPress={() => router.push(`/client/${c.id}`)}
-                  className="flex-row items-center gap-3 rounded-lg border border-border bg-secondary px-3 py-3 active:opacity-80">
-                  <View className="flex-1 gap-0.5">
-                    <Text className="text-sm" numberOfLines={1}>
+                  className="flex-row items-center gap-3 p-3.5">
+                  <View
+                    className="h-11 w-11 items-center justify-center rounded-full"
+                    style={{
+                      backgroundColor: alpha(COLORS.rose, 0.16),
+                      borderWidth: 1,
+                      borderColor: alpha(COLORS.rose, 0.35),
+                    }}>
+                    <Text className="text-sm font-black" style={{ color: COLORS.rose }}>
+                      {initials(c.name)}
+                    </Text>
+                  </View>
+                  <View className="min-w-0 flex-1 gap-0.5">
+                    <Text className="text-[15px] font-bold" numberOfLines={1}>
                       {c.name}
                     </Text>
                     <Text variant="muted" className="text-xs">
                       Last session {shortDate(c.last_session_date)}
                     </Text>
                   </View>
-                  <Icon as={ChevronRightIcon} className="text-muted-foreground" size={18} />
-                </Pressable>
+                  <Icon as={ChevronRightIcon} size={18} color={COLORS.muted} />
+                </Panel>
               ))}
             </View>
           ) : (
-            <Text variant="muted">Everyone has been active recently.</Text>
+            <EmptyView
+              icon={UserCheckIcon}
+              color={COLORS.green}
+              title="Everyone is active"
+              subtitle="No client has gone quiet recently. Nice coaching."
+            />
           )}
-        </Section>
+        </View>
       </View>
     </Screen>
   );

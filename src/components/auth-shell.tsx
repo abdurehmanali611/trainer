@@ -1,10 +1,10 @@
-import { DumbbellIcon } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import * as React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { deepGradient, Gradient } from '@/components/gradient';
-import { Icon } from '@/components/ui/icon';
+import { alpha, COLORS } from '@/components/kit';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
@@ -12,61 +12,109 @@ interface AuthShellProps {
   title: string;
   subtitle?: string;
   brand?: string;
+  /** Accepted for compatibility; the logo artwork already carries the tagline. */
   tagline?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  /** Wider card for long forms (registration). */
   wide?: boolean;
 }
+
+// Transparent FitPilot logo (generated from assets/images/fitpilot.png).
+const LOGO = require('../../assets/images/fitpilot-splash.png');
 
 export function AuthShell({
   title,
   subtitle,
-  brand = 'Trainer',
-  tagline = 'Coach smarter. Train harder.',
   children,
   footer,
   className,
   wide = false,
 }: AuthShellProps) {
   return (
-    <Gradient colors={deepGradient} style={{ flex: 1 }}>
-      <View className="absolute -right-24 -top-28 h-72 w-72 rounded-full bg-primary/15" />
-      <View className="absolute -bottom-28 -left-16 h-80 w-80 rounded-full bg-black/25" />
-      {/* NativeWind's polyfill does NOT wrap SafeAreaView on native (it's a
-          native component that drops className), so className="flex-1" was
-          silently ignored on device → this subtree collapsed to height 0 and
-          the screen rendered as gradient + circles only. Use style instead. */}
+    <Gradient colors={deepGradient} start={{ x: 0, y: 0 }} end={{ x: 0.6, y: 1 }} style={{ flex: 1 }}>
+      {/* Soft colour glows behind the card */}
+      <View
+        style={{
+          position: 'absolute',
+          top: -120,
+          right: -100,
+          width: 320,
+          height: 320,
+          borderRadius: 160,
+          backgroundColor: alpha(COLORS.green, 0.22),
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: -140,
+          left: -110,
+          width: 360,
+          height: 360,
+          borderRadius: 180,
+          backgroundColor: alpha(COLORS.cyan, 0.12),
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: '38%',
+          left: -40,
+          width: 140,
+          height: 140,
+          borderRadius: 70,
+          backgroundColor: alpha(COLORS.lime, 0.1),
+        }}
+      />
+      {/* NativeWind className is dropped on SafeAreaView on native, so the
+          flex sizing must be a style or the screen collapses to nothing. */}
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
-          className="flex-1"
+          style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView
-            contentContainerClassName="min-h-full flex-grow items-center justify-center px-5 py-8"
+            contentContainerStyle={{
+              flexGrow: 1,
+              justifyContent: 'center',
+              paddingHorizontal: 20,
+              paddingVertical: 24,
+            }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            <View className={cn('w-full', wide ? 'max-w-3xl' : 'max-w-md')}>
-              <View className="mb-7 items-center gap-3">
-                <View className="h-16 w-16 items-center justify-center rounded-xl border border-border bg-card">
-                  <Icon as={DumbbellIcon} color="#2DD4BF" size={28} />
-                </View>
-                <Text className="text-3xl font-semibold tracking-tight text-foreground">{brand}</Text>
-                <Text className="text-center text-sm text-muted-foreground">{tagline}</Text>
-              </View>
-
+            <View className={cn('w-full self-center', wide ? 'max-w-3xl' : 'max-w-md')}>
+            <View className="mb-4 items-center">
+              {/* The logo artwork already carries the "Train · Track · Grow" line. */}
+              <Image source={LOGO} style={{ width: 260, height: 210 }} contentFit="contain" />
               <View
-                className={cn(
-                  'rounded-xl border border-border bg-card p-5 shadow-sm shadow-black/30',
-                  className
-                )}>
-                <Text className="text-xl font-semibold tracking-tight text-foreground">{title}</Text>
-                {subtitle ? (
-                  <Text className="mt-1.5 text-sm leading-5 text-muted-foreground">{subtitle}</Text>
-                ) : null}
-                <View className="mt-5 gap-4">{children}</View>
+                className="mt-1 rounded-full px-3.5 py-1.5"
+                style={{ backgroundColor: alpha(COLORS.lime, 0.14), borderWidth: 1, borderColor: alpha(COLORS.lime, 0.35) }}>
+                <Text className="text-[11px] font-extrabold uppercase tracking-widest" style={{ color: COLORS.lime }}>
+                  Coach console
+                </Text>
               </View>
+            </View>
 
-              {footer ? <View className="mt-5 items-center">{footer}</View> : null}
+            <View
+              className={cn('rounded-[28px] border p-6', className)}
+              style={{
+                backgroundColor: 'rgba(11, 18, 32, 0.92)',
+                borderColor: alpha(COLORS.green, 0.28),
+                shadowColor: COLORS.green,
+                shadowOpacity: 0.25,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 10 },
+                elevation: 12,
+              }}>
+              <Text className="text-2xl font-black tracking-tight text-foreground">{title}</Text>
+              {subtitle ? (
+                <Text className="mt-1.5 text-sm leading-5 text-muted-foreground">{subtitle}</Text>
+              ) : null}
+              <View className="mt-5 gap-4">{children}</View>
+            </View>
+
+            {footer ? <View className="mt-5 items-center">{footer}</View> : null}
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

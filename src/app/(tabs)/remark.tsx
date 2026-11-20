@@ -1,6 +1,8 @@
 import {
   BadgeCheckIcon,
   CalendarClockIcon,
+  ClipboardCheckIcon,
+  InfoIcon,
   StarIcon,
   UserIcon,
   UserXIcon,
@@ -10,6 +12,7 @@ import {
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
+import { alpha, COLORS, Panel, Segmented } from '@/components/kit';
 import {
   Badge,
   EmptyView,
@@ -108,14 +111,24 @@ function SessionRow({
   onStatus: (session: Session, status: SessionStatus) => void;
 }) {
   return (
-    <View className="gap-2 rounded-2xl border border-border bg-card p-3.5 shadow-md shadow-black/35">
+    <Panel tint={mode === 'online' ? COLORS.cyan : COLORS.violet} className="gap-2 p-3.5">
       <View className="flex-row items-center justify-between gap-3">
         <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
-          <View className="h-9 w-9 items-center justify-center rounded-full bg-primary/10">
-            <Icon as={mode === 'online' ? VideoIcon : UserIcon} size={16} className="text-primary" />
+          <View
+            className="h-10 w-10 items-center justify-center rounded-full"
+            style={{
+              backgroundColor: alpha(mode === 'online' ? COLORS.cyan : COLORS.violet, 0.18),
+              borderWidth: 1,
+              borderColor: alpha(mode === 'online' ? COLORS.cyan : COLORS.violet, 0.4),
+            }}>
+            <Icon
+              as={mode === 'online' ? VideoIcon : UserIcon}
+              size={17}
+              color={mode === 'online' ? COLORS.cyan : COLORS.violet}
+            />
           </View>
           <View className="min-w-0 flex-1 gap-0.5">
-            <Text className="text-sm font-semibold" numberOfLines={1}>
+            <Text className="text-[15px] font-bold" numberOfLines={1}>
               {session.client_name}
             </Text>
             <Text variant="muted" className="text-xs">
@@ -213,9 +226,7 @@ function SessionRow({
                   key={star}
                   as={StarIcon}
                   size={14}
-                  className={
-                    star <= session.rating! ? 'text-amber-400' : 'text-muted-foreground/30'
-                  }
+                  color={star <= session.rating! ? COLORS.amber : alpha(COLORS.muted, 0.3)}
                 />
               ))}
               <Text variant="muted" className="ml-1 text-xs">
@@ -225,7 +236,7 @@ function SessionRow({
           ) : null}
         </View>
       )}
-    </View>
+    </Panel>
   );
 }
 
@@ -312,42 +323,30 @@ export default function RemarkScreen() {
         <LoadingView label="Loading sessions…" />
       ) : (
         <View className="gap-4">
-          <View className="flex-row gap-2 rounded-2xl border border-border bg-card p-1.5">
-            {(
-              [
-                { key: 'online', label: `Remark online (${onlineQueue.length})` },
-                { key: 'offline', label: `Remark offline (${offlineList.length})` },
-              ] as { key: Segment; label: string }[]
-            ).map((tab) => (
-              <Pressable
-                key={tab.key}
-                onPress={() => setSegment(tab.key)}
-                className={
-                  'flex-1 items-center rounded-xl px-3 py-2.5 ' +
-                  (segment === tab.key ? 'bg-primary' : 'active:opacity-70')
-                }
-                accessibilityRole="tab"
-                accessibilityState={{ selected: segment === tab.key }}>
-                <Text
-                  className={
-                    'text-xs font-semibold ' +
-                    (segment === tab.key ? 'text-primary-foreground' : 'text-muted-foreground')
-                  }
-                  numberOfLines={1}>
-                  {tab.label}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
+          <Segmented<Segment>
+            value={segment}
+            onChange={setSegment}
+            options={[
+              { key: 'online', label: `Online (${onlineQueue.length})`, icon: VideoIcon },
+              { key: 'offline', label: `Offline (${offlineList.length})`, icon: UserIcon },
+            ]}
+          />
 
-          <Text variant="muted" className="text-xs">
-            {segment === 'online'
-              ? 'Sessions with you — set the outcome: approved, no show, rescheduling or cancelling.'
-              : "Sessions without you — what you see is what the client marked; read-only, nothing to approve."}
-          </Text>
+          <View
+            className="flex-row items-start gap-2.5 rounded-2xl p-3"
+            style={{ backgroundColor: alpha(COLORS.sky, 0.09), borderWidth: 1, borderColor: alpha(COLORS.sky, 0.28) }}>
+            <Icon as={InfoIcon} size={16} color={COLORS.sky} />
+            <Text variant="muted" className="flex-1 text-xs">
+              {segment === 'online'
+                ? 'Sessions with you — set the outcome: approved, no show, rescheduling or cancelling.'
+                : 'Sessions without you — what you see is what the client marked; read-only, nothing to approve.'}
+            </Text>
+          </View>
 
           {rows.length === 0 ? (
             <EmptyView
+              icon={ClipboardCheckIcon}
+              color={segment === 'online' ? COLORS.cyan : COLORS.violet}
               title={segment === 'online' ? 'Nothing to remark' : 'No offline sessions yet'}
               subtitle={
                 segment === 'online'

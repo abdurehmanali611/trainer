@@ -1,10 +1,13 @@
 import { useRouter } from 'expo-router';
 import * as React from 'react';
+import { CalendarClockIcon, CircleCheckIcon, LockKeyholeIcon, ShieldAlertIcon, WalletIcon } from 'lucide-react-native';
 import { View } from 'react-native';
 
-import { Badge, ErrorView, LoadingView, Screen, ScreenHeader } from '@/components/screen';
+import { Gradient, sunriseGradient } from '@/components/gradient';
+import { COLORS, Panel } from '@/components/kit';
+import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { useAuth } from '@/lib/auth';
@@ -105,15 +108,27 @@ export default function PlatformLockScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void refresh()}>
-      <ScreenHeader
-        title="Subscription required"
-        subtitle="Your access is paused until the platform payment is approved."
-      />
+      <Gradient colors={sunriseGradient} style={{ borderRadius: 28, overflow: 'hidden', marginBottom: 20 }}>
+        <View className="flex-row items-center gap-4 p-5">
+          <View className="h-14 w-14 items-center justify-center rounded-3xl bg-black/25">
+            <Icon as={LockKeyholeIcon} size={28} color="#ffffff" />
+          </View>
+          <View className="min-w-0 flex-1 gap-0.5">
+            <Text className="text-xl font-black tracking-tight text-white">Subscription required</Text>
+            <Text className="text-sm text-white/90">
+              Your access is paused until the platform payment is approved.
+            </Text>
+          </View>
+        </View>
+      </Gradient>
 
       <View className="gap-4">
-        <Card className="gap-3 p-4">
+        <Panel tint={COLORS.amber} className="gap-3">
           <View className="flex-row items-center justify-between gap-2">
-            <Text className="text-sm font-semibold">Status</Text>
+            <View className="flex-row items-center gap-2">
+              <Icon as={CalendarClockIcon} size={16} color={COLORS.amber} />
+              <Text className="text-[15px] font-bold">Status</Text>
+            </View>
             <Badge tone={toneForState(platform.state)} label={platformStateLabel(platform.state)} />
           </View>
 
@@ -145,10 +160,10 @@ export default function PlatformLockScreen() {
               <Text className="text-sm font-medium">{platform.days_remaining}</Text>
             </View>
           ) : null}
-        </Card>
+        </Panel>
 
         {platform.notices.length > 0 ? (
-          <Card className="gap-2 p-4">
+          <Panel tint={COLORS.sky} className="gap-2">
             {platform.notices.map((notice) => (
               <View key={notice.id} className="gap-1">
                 <Text className="text-sm font-semibold">{notice.title}</Text>
@@ -157,14 +172,17 @@ export default function PlatformLockScreen() {
                 </Text>
               </View>
             ))}
-          </Card>
+          </Panel>
         ) : null}
 
         {canSubmit ? (
-          <Card className="gap-3 p-4">
-            <Text className="text-sm font-semibold">
-              {needsSetup ? 'Submit setup fee' : 'Submit quarterly payment'}
-            </Text>
+          <Panel tint={COLORS.green} className="gap-3">
+            <View className="flex-row items-center gap-2">
+              <Icon as={WalletIcon} size={16} color={COLORS.green} />
+              <Text className="text-[15px] font-bold">
+                {needsSetup ? 'Submit setup fee' : 'Submit quarterly payment'}
+              </Text>
+            </View>
             <Text variant="muted" className="text-sm">
               {needsSetup
                 ? `Setup fee: ${platform.setup_fee_etb} ETB. Send via Telebirr or CBE, then share the transaction ID.`
@@ -187,14 +205,28 @@ export default function PlatformLockScreen() {
               value={transactionRef}
               onChangeText={setTransactionRef}
             />
-            {info ? <Text className="text-xs text-emerald-600">{info}</Text> : null}
-            {error ? <Text className="text-xs text-destructive">{error}</Text> : null}
+            {info ? (
+              <View className="flex-row items-center gap-1.5">
+                <Icon as={CircleCheckIcon} size={14} color={COLORS.green} />
+                <Text className="flex-1 text-xs font-semibold" style={{ color: COLORS.green }}>
+                  {info}
+                </Text>
+              </View>
+            ) : null}
+            {error ? (
+              <View className="flex-row items-center gap-1.5">
+                <Icon as={ShieldAlertIcon} size={14} color={COLORS.rose} />
+                <Text className="flex-1 text-xs font-semibold" style={{ color: COLORS.rose }}>
+                  {error}
+                </Text>
+              </View>
+            ) : null}
             <Button disabled={submitting} onPress={() => void submit()}>
               <Text className="text-sm font-semibold text-primary-foreground">
                 {submitting ? 'Submitting…' : 'Submit payment reference'}
               </Text>
             </Button>
-          </Card>
+          </Panel>
         ) : null}
 
         {error && !canSubmit ? <ErrorView error={error} onRetry={() => void refresh()} /> : null}

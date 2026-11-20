@@ -4,12 +4,14 @@ import { View } from 'react-native';
 
 import { cn } from '@/lib/utils';
 
-/** Deep navy → teal — matches hotcol-style dark primary */
-export const brandGradient = ['#134E4A', '#2DD4BF'] as const;
-export const powerGradient = ['#0F172A', '#0F766E'] as const;
-export const deepGradient = ['#0B1220', '#134E4A'] as const;
-export const sunriseGradient = ['#B45309', '#F59E0B'] as const;
-export const freshGradient = ['#0F766E', '#2DD4BF'] as const;
+/** FitPilot brand — green → lime, with colourful companions. */
+export const brandGradient = ['#16A34A', '#84CC16'] as const;
+export const powerGradient = ['#059669', '#65A30D'] as const;
+export const deepGradient = ['#03070D', '#0B3B26'] as const;
+export const sunriseGradient = ['#F59E0B', '#EF4444'] as const;
+export const freshGradient = ['#06B6D4', '#10B981'] as const;
+export const violetGradient = ['#7C3AED', '#EC4899'] as const;
+export const oceanGradient = ['#0EA5E9', '#6366F1'] as const;
 
 type GradientColors = readonly [string, string, ...string[]];
 
@@ -34,9 +36,10 @@ export function HeroCard({
   ...props
 }: Omit<GradientProps, 'style'> & { className?: string; children?: React.ReactNode }) {
   return (
-    <Gradient colors={colors} style={{ borderRadius: 16, overflow: 'hidden' }} {...props}>
-      <View className="absolute -right-12 -top-16 h-40 w-40 rounded-full bg-white/10" />
-      <View className="absolute -bottom-20 -left-10 h-40 w-40 rounded-full bg-black/20" />
+    <Gradient colors={colors} style={{ borderRadius: 28, overflow: 'hidden' }} {...props}>
+      <View className="absolute -right-10 -top-14 h-40 w-40 rounded-full bg-white/15" />
+      <View className="absolute -bottom-16 -left-8 h-36 w-36 rounded-full bg-black/10" />
+      <View className="absolute right-8 bottom-6 h-16 w-16 rounded-full bg-white/10" />
       <View className={cn('relative p-5', className)}>{children}</View>
     </Gradient>
   );

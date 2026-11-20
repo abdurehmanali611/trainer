@@ -35,14 +35,22 @@ function Field({ label, required, hint, children }: FieldProps) {
   );
 }
 
-function SectionTitle({ title, step }: { title: string; step?: string }) {
+function SectionTitle({ title, step, color = '#3ADD6C' }: { title: string; step?: string; color?: string }) {
   return (
-    <View className="mb-1 mt-2 flex-row items-center gap-2">
-      <View className="h-px flex-1 bg-border" />
-      <Text className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        {step ? `${step} · ${title}` : title}
+    <View className="mb-1 mt-2 flex-row items-center gap-2.5">
+      {step ? (
+        <View
+          className="h-7 w-7 items-center justify-center rounded-full"
+          style={{ backgroundColor: color }}>
+          <Text className="text-xs font-black" style={{ color: '#04110A' }}>
+            {step}
+          </Text>
+        </View>
+      ) : null}
+      <Text className="text-[13px] font-black uppercase tracking-widest" style={{ color }}>
+        {title}
       </Text>
-      <View className="h-px flex-1 bg-border" />
+      <View className="h-px flex-1" style={{ backgroundColor: color, opacity: 0.25 }} />
     </View>
   );
 }
@@ -175,7 +183,7 @@ export default function RegisterScreen() {
         </View>
 
         <View className="gap-4 md:flex-1">
-          <SectionTitle title="Setup payment" step="2" />
+          <SectionTitle title="Setup payment" step="2" color="#FBBF24" />
           <Field label="Payment channel" required>
             <View className="flex-row flex-wrap gap-2">
               {CHANNELS.map((channel) => {
@@ -185,12 +193,12 @@ export default function RegisterScreen() {
                     key={channel}
                     size="sm"
                     variant={selected ? 'default' : 'outline'}
-                    className={cn('rounded-full', !selected && 'bg-transparent')}
+                    className={cn('h-10 rounded-full px-4', !selected && 'bg-transparent')}
                     onPress={() => setForm((f) => ({ ...f, setup_channel: channel }))}>
-                    {selected ? <Icon as={CheckIcon} size={14} className="text-primary-foreground" /> : null}
+                    {selected ? <Icon as={CheckIcon} size={14} color="#04110A" /> : null}
                     <Text
                       className={cn(
-                        'text-xs font-medium',
+                        'text-xs font-bold',
                         selected ? 'text-primary-foreground' : 'text-foreground'
                       )}>
                       {channel}

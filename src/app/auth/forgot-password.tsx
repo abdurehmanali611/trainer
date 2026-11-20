@@ -46,7 +46,7 @@ export default function ForgotPasswordScreen() {
       }>
       {sent ? (
         <View className="rounded-2xl bg-success/10 p-4">
-          <Text className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+          <Text className="text-sm font-semibold" style={{ color: '#3ADD6C' }}>
             If that email is registered, a reset link is on its way.
           </Text>
         </View>

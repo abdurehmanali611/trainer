@@ -3,7 +3,10 @@ import {
   AppleIcon,
   ArrowDownIcon,
   ArrowUpIcon,
+  CheckCircle2Icon,
   ClockIcon,
+  CloudUploadIcon,
+  FlameIcon,
   PencilIcon,
   PlusIcon,
   Trash2Icon,
@@ -12,6 +15,8 @@ import {
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
+import { Gradient, sunriseGradient } from '@/components/gradient';
+import { alpha, Chip, COLORS, IconBubble, Panel, SectionHeader } from '@/components/kit';
 import { Badge, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import {
@@ -359,34 +364,78 @@ export default function DietPlanScreen() {
       <Stack.Screen options={{ title: form.name || 'Diet plan' }} />
       <Screen refreshing={refreshing} onRefresh={() => void load()}>
         <View className="gap-6">
-          <View className="gap-3">
-            <View className="flex-row flex-wrap items-center gap-2">
-              <Badge label={plan.is_template ? 'Template' : 'Assigned'} tone={plan.is_template ? 'info' : 'success'} />
-              {!plan.is_template && plan.client_name ? (
-                <Text variant="muted">{plan.client_name}</Text>
-              ) : null}
+          <Gradient colors={sunriseGradient} style={{ borderRadius: 28, overflow: 'hidden' }}>
+            <View className="gap-3 p-5">
+              <View className="flex-row flex-wrap items-center gap-2">
+                <View className="rounded-full bg-black/25 px-3 py-1">
+                  <Text className="text-xs font-bold text-white">
+                    {plan.is_template ? 'Template' : 'Assigned'}
+                  </Text>
+                </View>
+                {!plan.is_template && plan.client_name ? (
+                  <Text className="text-sm font-semibold text-white/90">{plan.client_name}</Text>
+                ) : null}
+                <View className="ml-auto flex-row items-center gap-1.5">
+                  <Icon
+                    as={saveError ? CloudUploadIcon : CheckCircle2Icon}
+                    size={14}
+                    color={saveError ? '#FEE2E2' : 'rgba(255,255,255,0.9)'}
+                  />
+                  {saveError ? (
+                    <Text
+                      className="text-xs font-bold text-white underline"
+                      onPress={() => {
+                        setSaveError(null);
+                        void save();
+                      }}>
+                      Autosave failed — tap to retry
+                    </Text>
+                  ) : (
+                    <Text className="text-xs font-semibold text-white/90">
+                      {saving ? 'Saving…' : 'All changes saved'}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <Input
+                placeholder="Plan name"
+                value={form.name}
+                onChangeText={(v) => updateForm({ name: v })}
+                autoCapitalize="words"
+                style={{ backgroundColor: 'rgba(0,0,0,0.28)', borderColor: 'rgba(255,255,255,0.3)', color: '#fff' }}
+                placeholderTextColor="rgba(255,255,255,0.65)"
+              />
+              <View className="flex-row flex-wrap gap-2">
+                {!plan.is_template ? (
+                  <Pressable
+                    onPress={() => void saveAsTemplate()}
+                    className="h-10 items-center justify-center rounded-2xl px-4 active:opacity-80"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                    <Text className="text-sm font-bold text-white">Save as template</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  onPress={confirmDeletePlan}
+                  className="h-10 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-80"
+                  style={{ backgroundColor: 'rgba(127,29,29,0.85)' }}>
+                  <Icon as={Trash2Icon} size={15} color="#fff" />
+                  <Text className="text-sm font-bold text-white">Delete</Text>
+                </Pressable>
+              </View>
             </View>
-            <Input
-              placeholder="Plan name"
-              value={form.name}
-              onChangeText={(v) => updateForm({ name: v })}
-              autoCapitalize="words"
-            />
-            <View className="flex-row flex-wrap gap-2">
-              {!plan.is_template ? (
-                <Button variant="outline" size="sm" onPress={() => void saveAsTemplate()}>
-                  <Text>Save as template</Text>
-                </Button>
-              ) : null}
-              <Button variant="destructive" size="sm" onPress={confirmDeletePlan}>
-                <Icon as={Trash2Icon} size={16} />
-                <Text>Delete</Text>
-              </Button>
-            </View>
-          </View>
+          </Gradient>
 
-          <View className="gap-3 rounded-xl border border-border bg-card p-4">
-            <Text className="font-semibold">Daily macros</Text>
+          <Panel tint={COLORS.amber} className="gap-3">
+            <View className="flex-row items-center gap-2.5">
+              <IconBubble icon={FlameIcon} color={COLORS.amber} size={32} />
+              <Text className="text-[15px] font-bold tracking-tight">Daily macros</Text>
+            </View>
+            <View className="flex-row flex-wrap gap-2">
+              <Chip label={`${form.dailyCalories || 0} kcal`} color={COLORS.amber} />
+              <Chip label={`P ${form.protein || 0}g`} color={COLORS.rose} />
+              <Chip label={`C ${form.carbs || 0}g`} color={COLORS.sky} />
+              <Chip label={`F ${form.fats || 0}g`} color={COLORS.lime} />
+            </View>
             <Field
               label="Calories (kcal)"
               value={form.dailyCalories}
@@ -413,43 +462,29 @@ export default function DietPlanScreen() {
                 keyboardType="number-pad"
               />
             </View>
-          </View>
-
-          <View className="gap-1.5">
-            {saveError ? (
-              <Text
-                className="text-sm text-destructive underline"
-                onPress={() => {
-                  setSaveError(null);
-                  void save();
-                }}>
-                Autosave failed — tap to retry
-              </Text>
-            ) : (
-              <Text variant="muted">{saving ? 'Saving…' : 'All changes saved'}</Text>
-            )}
-          </View>
+          </Panel>
 
           <View className="gap-3">
-            <View className="flex-row items-center justify-between">
-              <Text variant="h4">Meals</Text>
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={() => {
-                  setMealDraft({ name: '', time: '' });
-                  setAddMealOpen(true);
-                }}>
-                <Icon as={PlusIcon} size={16} />
-                <Text>Add meal</Text>
-              </Button>
-            </View>
+            <SectionHeader
+              title="Meals"
+              subtitle={`${plan.meals.length} meal${plan.meals.length === 1 ? '' : 's'}`}
+              icon={UtensilsIcon}
+              color={COLORS.green}
+              actionLabel="Add meal"
+              onAction={() => {
+                setMealDraft({ name: '', time: '' });
+                setAddMealOpen(true);
+              }}
+            />
 
             {plan.meals.length === 0 ? (
               <Text variant="muted">No meals yet. Add a meal to start building the plan.</Text>
             ) : (
               plan.meals.map((meal, mealIndex) => (
-                <View key={`meal-${mealIndex}`} className="gap-3 rounded-xl border border-border bg-card p-4">
+                <View
+                  key={`meal-${mealIndex}`}
+                  className="gap-3 rounded-3xl border p-4"
+                  style={{ backgroundColor: alpha(COLORS.green, 0.06), borderColor: alpha(COLORS.green, 0.26) }}>
                   <View className="flex-row items-center gap-2">
                     <Input
                       className="flex-1"
@@ -465,7 +500,7 @@ export default function DietPlanScreen() {
                       onPress={() => setMealTimeEdit({ mealIndex, time: meal.time })}
                       accessibilityRole="button"
                       className="h-11 w-24 flex-row items-center justify-center gap-1.5 rounded-xl border border-input bg-card px-2 active:opacity-70">
-                      <Icon as={ClockIcon} size={14} className="text-muted-foreground" />
+                      <Icon as={ClockIcon} size={14} color={COLORS.green} />
                       <Text
                         numberOfLines={1}
                         className={cn('text-xs', meal.time ? 'text-foreground' : 'text-muted-foreground')}>
@@ -473,7 +508,7 @@ export default function DietPlanScreen() {
                       </Text>
                     </Pressable>
                     <Pressable hitSlop={8} onPress={() => deleteMeal(mealIndex)}>
-                      <Icon as={Trash2Icon} size={18} className="text-destructive" />
+                      <Icon as={Trash2Icon} size={18} color={COLORS.rose} />
                     </Pressable>
                   </View>
 
@@ -485,45 +520,62 @@ export default function DietPlanScreen() {
                     meal.items.map((item, itemIndex) => (
                       <View
                         key={`item-${mealIndex}-${itemIndex}`}
-                        className="flex-row items-center gap-2 rounded-lg border border-border bg-background p-2.5">
+                        className="flex-row items-center gap-2 rounded-2xl border border-border bg-background p-2.5">
                         <View className="gap-1">
                           <Pressable
                             hitSlop={6}
                             disabled={itemIndex === 0}
                             onPress={() => moveItem(mealIndex, itemIndex, -1)}
                             className={cn(itemIndex === 0 && 'opacity-30')}>
-                            <Icon as={ArrowUpIcon} size={16} />
+                            <Icon as={ArrowUpIcon} size={16} color={COLORS.muted} />
                           </Pressable>
                           <Pressable
                             hitSlop={6}
                             disabled={itemIndex === meal.items.length - 1}
                             onPress={() => moveItem(mealIndex, itemIndex, 1)}
                             className={cn(itemIndex === meal.items.length - 1 && 'opacity-30')}>
-                            <Icon as={ArrowDownIcon} size={16} />
+                            <Icon as={ArrowDownIcon} size={16} color={COLORS.muted} />
                           </Pressable>
                         </View>
                         <View className="min-w-0 flex-1 gap-0.5">
-                          <Text className="text-sm font-medium" numberOfLines={1}>
+                          <Text className="text-sm font-bold" numberOfLines={1}>
                             {item.name || 'Item'}
                           </Text>
-                          <Text variant="muted" className="text-xs">
-                            {`${item.calories} kcal · P ${item.protein} · C ${item.carbs} · F ${item.fats}`}
-                          </Text>
+                          <View className="flex-row flex-wrap items-center gap-2">
+                            <Text className="text-xs font-bold" style={{ color: COLORS.amber }}>
+                              {item.calories} kcal
+                            </Text>
+                            <Text className="text-xs font-bold" style={{ color: COLORS.rose }}>
+                              P {item.protein}
+                            </Text>
+                            <Text className="text-xs font-bold" style={{ color: COLORS.sky }}>
+                              C {item.carbs}
+                            </Text>
+                            <Text className="text-xs font-bold" style={{ color: COLORS.lime }}>
+                              F {item.fats}
+                            </Text>
+                          </View>
                         </View>
                         <Pressable hitSlop={6} onPress={() => editItem(mealIndex, itemIndex)}>
-                          <Icon as={PencilIcon} size={16} className="text-muted-foreground" />
+                          <Icon as={PencilIcon} size={16} color={COLORS.sky} />
                         </Pressable>
                         <Pressable hitSlop={6} onPress={() => removeItem(mealIndex, itemIndex)}>
-                          <Icon as={Trash2Icon} size={16} className="text-destructive" />
+                          <Icon as={Trash2Icon} size={16} color={COLORS.rose} />
                         </Pressable>
                       </View>
                     ))
                   )}
 
-                  <Button variant="outline" size="sm" onPress={() => addItem(mealIndex)}>
-                    <Icon as={PlusIcon} size={16} />
-                    <Text>Add item</Text>
-                  </Button>
+                  <Pressable
+                    onPress={() => addItem(mealIndex)}
+                    accessibilityRole="button"
+                    className="h-11 flex-row items-center justify-center gap-2 rounded-2xl active:opacity-80"
+                    style={{ backgroundColor: alpha(COLORS.green, 0.16), borderWidth: 1, borderColor: alpha(COLORS.green, 0.4) }}>
+                    <Icon as={PlusIcon} size={16} color={COLORS.green} />
+                    <Text className="text-sm font-black" style={{ color: COLORS.green }}>
+                      Add item
+                    </Text>
+                  </Pressable>
                 </View>
               ))
             )}
@@ -541,7 +593,7 @@ export default function DietPlanScreen() {
               {plan.adherence_reports.map((report) => (
                 <View
                   key={report.id}
-                  className="gap-1.5 rounded-xl border border-border bg-card p-3">
+                  className="gap-1.5 rounded-2xl border border-border bg-card p-3">
                   <View className="flex-row items-center justify-between gap-2">
                     {report.client_name ? (
                       <Text className="text-sm font-medium" numberOfLines={1}>

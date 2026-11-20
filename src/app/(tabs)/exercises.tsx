@@ -1,6 +1,7 @@
 import {
   DumbbellIcon,
   PaperclipIcon,
+  SearchIcon,
   PlusIcon,
   TimerIcon,
   Trash2Icon,
@@ -8,14 +9,8 @@ import {
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
 
-import {
-  Badge,
-  EmptyView,
-  ErrorView,
-  LoadingView,
-  Screen,
-  ScreenHeader,
-} from '@/components/screen';
+import { Chip, COLORS, IconBubble, Panel } from '@/components/kit';
+import { EmptyView, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import {
@@ -64,14 +59,14 @@ const DIFFICULTY_OPTIONS: Option[] = [
   { value: 'advanced', label: 'Advanced' },
 ];
 
-const TYPE_TONE: Record<string, 'default' | 'success' | 'warning' | 'danger' | 'info'> = {
-  strength: 'info',
-  cardio: 'warning',
-  core: 'success',
-  flexibility: 'success',
-  mobility: 'info',
-  plyometrics: 'warning',
-  other: 'default',
+const TYPE_COLOR: Record<string, string> = {
+  strength: COLORS.violet,
+  cardio: COLORS.rose,
+  core: COLORS.amber,
+  flexibility: COLORS.green,
+  mobility: COLORS.sky,
+  plyometrics: COLORS.orange,
+  other: COLORS.muted,
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -359,15 +354,39 @@ export default function ExercisesScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void load()}>
-      <View className="mb-5 mt-5 flex-row items-center justify-between gap-2">
-        <Input
-          placeholder="Search exercises…"
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-          autoCorrect={false}
-          className="flex-1"
-        />
+      <View className="mb-4 mt-2 flex-row items-center justify-between gap-3">
+        <View className="min-w-0 flex-1">
+          <Text className="text-[28px] font-black tracking-tight">Exercises</Text>
+          <Text variant="muted" className="text-[13px]">
+            {`${items.length} in your library`}
+          </Text>
+        </View>
+        <Pressable
+          onPress={newExercise}
+          accessibilityRole="button"
+          className="h-12 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-80"
+          style={{ backgroundColor: COLORS.violet }}>
+          <Icon as={PlusIcon} size={18} color="#12091F" />
+          <Text className="text-sm font-black" style={{ color: '#12091F' }}>
+            New
+          </Text>
+        </Pressable>
+      </View>
+
+      <View className="mb-5 flex-row items-center gap-2">
+        <View className="min-w-0 flex-1 justify-center">
+          <Input
+            placeholder="Search exercises…"
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+            className="h-12 rounded-2xl pl-11"
+          />
+          <View pointerEvents="none" className="absolute left-4">
+            <Icon as={SearchIcon} size={18} color={COLORS.muted} />
+          </View>
+        </View>
         <Combobox
           value={typeFilter}
           onValueChange={setTypeFilter}
@@ -375,23 +394,14 @@ export default function ExercisesScreen() {
           placeholder="All types"
           searchPlaceholder="Search types…"
           align="right"
-          className="w-40"
+          className="w-36"
         />
       </View>
 
-      <ScreenHeader
-        title="Exercises"
-        subtitle={`${items.length} in your library`}
-        right={
-          <Button size="sm" onPress={newExercise} className="px-5">
-            <Icon as={PlusIcon} size={16} />
-            <Text>New</Text>
-          </Button>
-        }
-      />
-
       {items.length === 0 ? (
         <EmptyView
+          icon={DumbbellIcon}
+          color={COLORS.violet}
           title="No exercises"
           subtitle={
             search || typeFilter !== 'all'
@@ -407,41 +417,47 @@ export default function ExercisesScreen() {
       ) : (
         <View className="gap-3">
           {items.map((exercise) => (
-            <Pressable
+            <Panel
               key={exercise.id}
+              tint={TYPE_COLOR[exercise.exercise_type] ?? COLORS.violet}
               onPress={() => openEdit(exercise)}
-              className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm shadow-black/30 active:opacity-70">
+              className="flex-row items-center gap-3 p-3.5">
+              <IconBubble
+                icon={DumbbellIcon}
+                color={TYPE_COLOR[exercise.exercise_type] ?? COLORS.violet}
+                size={44}
+              />
               <View className="min-w-0 flex-1 gap-1">
-                <View className="flex-row flex-wrap items-center gap-2">
-                  <Text className="font-medium" numberOfLines={1}>
-                    {exercise.name}
-                  </Text>
-                  <Badge
+                <Text className="text-[15px] font-bold" numberOfLines={1}>
+                  {exercise.name}
+                </Text>
+                <View className="flex-row flex-wrap items-center gap-1.5">
+                  <Chip
                     label={TYPE_LABEL[exercise.exercise_type] ?? 'Strength'}
-                    tone={TYPE_TONE[exercise.exercise_type] ?? 'info'}
+                    color={TYPE_COLOR[exercise.exercise_type] ?? COLORS.violet}
                   />
-                  {exercise.trainer == null ? (
-                    <Badge label="Base" tone="default" />
-                  ) : null}
+                  {exercise.trainer == null ? <Chip label="Base" color={COLORS.muted} /> : null}
                 </View>
-                <Text variant="muted" className="text-xs">
+                <Text variant="muted" className="text-xs" numberOfLines={1}>
                   {[exercise.muscle_group, exercise.difficulty, exercise.equipment]
                     .filter(Boolean)
                     .join(' · ') || '—'}
                 </Text>
               </View>
-              <Text variant="muted" className="text-xs">
-                {exercise.sets}×{exercise.reps}
-              </Text>
-              {exercise.trainer != null ? (
-                <Pressable
-                  onPress={() => confirmDelete(exercise)}
-                  hitSlop={10}
-                  className="rounded-lg p-2 active:bg-accent">
-                  <Icon as={Trash2Icon} size={16} className="text-muted-foreground" />
-                </Pressable>
-              ) : null}
-            </Pressable>
+              <View className="items-end gap-1">
+                <Text className="text-sm font-black" style={{ color: COLORS.amber }}>
+                  {exercise.sets}×{exercise.reps}
+                </Text>
+                {exercise.trainer != null ? (
+                  <Pressable
+                    onPress={() => confirmDelete(exercise)}
+                    hitSlop={10}
+                    className="rounded-xl p-1.5 active:bg-destructive/10">
+                    <Icon as={Trash2Icon} size={16} color={COLORS.rose} />
+                  </Pressable>
+                ) : null}
+              </View>
+            </Panel>
           ))}
         </View>
       )}

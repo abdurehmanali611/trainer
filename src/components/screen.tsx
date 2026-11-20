@@ -1,8 +1,10 @@
 import * as React from 'react';
+import { InboxIcon, TriangleAlertIcon, type LucideIcon } from 'lucide-react-native';
 import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppHeader } from '@/components/app-header';
+import { alpha, COLORS, IconBubble } from '@/components/kit';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
@@ -70,57 +72,74 @@ export function ScreenHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <View className="mb-5 gap-1.5">
+    <View className="mb-5 gap-1">
       <View className="flex-row items-center justify-between gap-3">
-        <Text variant="h2" className="flex-1 text-[24px] font-semibold tracking-tight">
-          {title}
-        </Text>
+        <Text className="flex-1 text-[30px] font-black tracking-tight">{title}</Text>
         {right}
       </View>
-      {subtitle ? (
-        <Text variant="muted" className="text-[13px]">
-          {subtitle}
-        </Text>
-      ) : null}
+      {subtitle ? <Text variant="muted">{subtitle}</Text> : null}
     </View>
   );
 }
 
 export function LoadingView({ label }: { label?: string }) {
   return (
-    <View className="flex-1 items-center justify-center gap-2 bg-background">
-      <ActivityIndicator size="large" />
+    <View className="flex-1 items-center justify-center gap-3 bg-background">
+      <ActivityIndicator size="large" color={COLORS.green} />
       {label ? <Text variant="muted">{label}</Text> : null}
     </View>
   );
 }
 
-export function EmptyView({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+export function EmptyView({
+  title,
+  subtitle,
+  action,
+  icon = InboxIcon,
+  color = COLORS.green,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  icon?: LucideIcon;
+  color?: string;
+}) {
   return (
-    <View className="items-center justify-center gap-2 py-16">
-      <Text variant="h4">{title}</Text>
-      {subtitle ? <Text variant="muted">{subtitle}</Text> : null}
-      {action ? <View className="mt-4">{action}</View> : null}
+    <View className="items-center justify-center gap-3 px-6 py-12">
+      <IconBubble icon={icon} color={color} size={64} />
+      <Text className="text-lg font-bold tracking-tight">{title}</Text>
+      {subtitle ? (
+        <Text variant="muted" className="text-center">
+          {subtitle}
+        </Text>
+      ) : null}
+      {action ? <View className="mt-3">{action}</View> : null}
     </View>
   );
 }
 
 export function ErrorView({ error, onRetry }: { error: string; onRetry?: () => void }) {
   return (
-    <View className="items-center justify-center gap-3 py-16">
-      <Text variant="h4">Something went wrong</Text>
+    <View className="items-center justify-center gap-3 px-6 py-16">
+      <IconBubble icon={TriangleAlertIcon} color={COLORS.rose} size={64} />
+      <Text className="text-lg font-bold tracking-tight">Something went wrong</Text>
       <Text variant="muted" className="text-center">
         {error}
       </Text>
       {onRetry ? (
-        <Text variant="small" onPress={onRetry} className="text-primary mt-2 underline">
-          Tap to retry
+        <Text
+          variant="small"
+          onPress={onRetry}
+          className="mt-2 rounded-full px-5 py-2.5 font-bold"
+          style={{ color: '#04110A', backgroundColor: COLORS.green, overflow: 'hidden' }}>
+          Try again
         </Text>
       ) : null}
     </View>
   );
 }
 
+/** Small colored pill used for statuses (mode, invoice, session, etc.). */
 export function Badge({
   label,
   tone = 'default',
@@ -130,16 +149,21 @@ export function Badge({
   tone?: 'default' | 'success' | 'warning' | 'danger' | 'info';
   className?: string;
 }) {
-  const tones: Record<string, string> = {
-    default: 'bg-muted text-muted-foreground ring-border',
-    success: 'bg-success/15 text-success ring-success/30',
-    warning: 'bg-warning/15 text-warning ring-warning/30',
-    danger: 'bg-destructive/15 text-destructive ring-destructive/30',
-    info: 'bg-primary/15 text-primary ring-primary/30',
+  const colors: Record<string, string> = {
+    default: COLORS.muted,
+    success: COLORS.green,
+    warning: COLORS.amber,
+    danger: COLORS.rose,
+    info: COLORS.sky,
   };
+  const color = colors[tone] ?? COLORS.muted;
   return (
-    <View className={cn('self-start rounded-full px-2.5 py-1 ring-1 ring-inset', tones[tone], className)}>
-      <Text className="text-xs font-semibold tracking-tight">{label}</Text>
+    <View
+      className={cn('self-start rounded-full px-2.5 py-1', className)}
+      style={{ backgroundColor: alpha(color, 0.16), borderWidth: 1, borderColor: alpha(color, 0.32) }}>
+      <Text className="text-xs font-bold capitalize" style={{ color }}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -162,7 +186,7 @@ export const toneForSession: Record<string, 'success' | 'danger' | 'warning' | '
   canceled: 'default',
   no_show: 'danger',
   scheduled: 'info',
-  approved: 'success', // Feature 21: trainer-approved online session
+  approved: 'success',
   rescheduling: 'warning',
 };
 

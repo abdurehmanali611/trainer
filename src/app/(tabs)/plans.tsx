@@ -1,9 +1,10 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ChevronRightIcon, NotebookPenIcon, PlusIcon } from 'lucide-react-native';
+import { ChevronRightIcon, DumbbellIcon, NotebookPenIcon, PlusIcon, SaladIcon } from 'lucide-react-native';
 import * as React from 'react';
-import { Alert, Pressable, View } from 'react-native';
+import { Alert, View } from 'react-native';
 
-import { Badge, EmptyView, ErrorView, LoadingView, Screen } from '@/components/screen';
+import { Chip, COLORS, IconBubble, Panel, Segmented } from '@/components/kit';
+import { EmptyView, ErrorView, LoadingView, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,7 +20,6 @@ import { Combobox } from '@/components/ui/combobox';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { SwipeRail } from '@/components/swipe-rail';
 import { Text } from '@/components/ui/text';
 import { api } from '@/lib/api';
 import type { Client, DietPlan, Paginated, WorkoutPlan } from '@/lib/types';
@@ -36,41 +36,43 @@ function PlanRow({
   clientName,
   isTemplate,
   meta,
+  kind,
   onPress,
 }: {
   name: string;
   clientName: string | null;
   isTemplate: boolean;
   meta: string;
+  kind: Segment;
   onPress: () => void;
 }) {
+  const color = kind === 'workout' ? COLORS.violet : COLORS.amber;
   return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm shadow-black/30 active:opacity-70">
+    <Panel tint={color} onPress={onPress} className="flex-row items-center gap-3 p-3.5">
+      <IconBubble icon={kind === 'workout' ? DumbbellIcon : SaladIcon} color={color} size={46} />
       <View className="min-w-0 flex-1 gap-1">
-        <View className="flex-row items-center gap-2">
-          <Text className="font-medium" numberOfLines={1}>
-            {name}
-          </Text>
-          {isTemplate ? <Badge label="Template" tone="info" /> : null}
-        </View>
-        <Text variant="muted" className="text-xs" numberOfLines={1}>
-          {isTemplate ? 'Template' : clientName ?? 'Unassigned'}
+        <Text className="text-[15px] font-bold" numberOfLines={1}>
+          {name}
         </Text>
+        <View className="flex-row flex-wrap items-center gap-1.5">
+          {isTemplate ? (
+            <Chip label="Template" color={COLORS.sky} />
+          ) : (
+            <Text variant="muted" className="text-xs" numberOfLines={1}>
+              {clientName ?? 'Unassigned'}
+            </Text>
+          )}
+          <Chip label={meta} color={color} />
+        </View>
       </View>
-      <Text variant="muted" className="text-xs">
-        {meta}
-      </Text>
-      <Icon as={ChevronRightIcon} size={16} className="text-muted-foreground" />
-    </Pressable>
+      <Icon as={ChevronRightIcon} size={18} color={COLORS.muted} />
+    </Panel>
   );
 }
 
 export default function PlansScreen() {
   const router = useRouter();
   const [segment, setSegment] = React.useState<Segment>('workout');
-  const [lit, setLit] = React.useState<0 | 1>(0);
   const [filter, setFilter] = React.useState<Option>({ value: 'all', label: 'All plans' });
   const [clients, setClients] = React.useState<Client[]>([]);
   const [workoutPlans, setWorkoutPlans] = React.useState<WorkoutPlan[]>([]);
@@ -186,6 +188,8 @@ export default function PlansScreen() {
         <View className="gap-3">
           {workoutPlans.length === 0 ? (
             <EmptyView
+              icon={DumbbellIcon}
+              color={COLORS.violet}
               title="No workout plans"
               subtitle={
                 filter.value === 'all'
@@ -205,6 +209,7 @@ export default function PlansScreen() {
                 name={plan.name}
                 clientName={plan.client_name}
                 isTemplate={plan.is_template}
+                kind="workout"
                 meta={plural(plan.days.length, 'day')}
                 onPress={() => router.push(`/plan/workout/${plan.id}`)}
               />
@@ -215,6 +220,8 @@ export default function PlansScreen() {
         <View className="gap-3">
           {dietPlans.length === 0 ? (
             <EmptyView
+              icon={SaladIcon}
+              color={COLORS.amber}
               title="No diet plans"
               subtitle={
                 filter.value === 'all' ? 'Create your first diet plan.' : 'Nothing matches this filter.'
@@ -232,6 +239,7 @@ export default function PlansScreen() {
                 name={plan.name}
                 clientName={plan.client_name}
                 isTemplate={plan.is_template}
+                kind="diet"
                 meta={plural(plan.meals.length, 'meal')}
                 onPress={() => router.push(`/plan/diet/${plan.id}`)}
               />
@@ -262,7 +270,18 @@ export default function PlansScreen() {
         </Button>
       </View>
 
-      <View className="mb-[5px] flex-row items-start justify-between gap-3">
+      <View className="mb-4">
+        <Segmented<Segment>
+          value={segment}
+          onChange={setSegment}
+          options={[
+            { key: 'workout', label: 'Workouts', icon: DumbbellIcon },
+            { key: 'diet', label: 'Diet', icon: SaladIcon },
+          ]}
+        />
+      </View>
+
+      <View className="mb-3 flex-row items-start justify-between gap-3">
         <View className="min-w-0 flex-1 gap-0.5">
           <Text variant="h2">{segment === 'workout' ? 'Workouts' : 'Diet'}</Text>
           <Text variant="muted" className="text-xs">
@@ -271,13 +290,6 @@ export default function PlansScreen() {
               : plural(dietPlans.length, 'diet plan')}
           </Text>
         </View>
-        <SwipeRail
-          direction={segment === 'workout' ? 'forward' : 'back'}
-          label={segment === 'workout' ? 'Swipe to Diet' : 'Swipe to Workout'}
-          lit={lit}
-          onLitChange={setLit}
-          onPress={() => setSegment((s) => (s === 'workout' ? 'diet' : 'workout'))}
-        />
       </View>
 
       {body}

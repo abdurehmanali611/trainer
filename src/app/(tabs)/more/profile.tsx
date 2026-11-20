@@ -1,8 +1,13 @@
 import * as ImagePicker from 'expo-image-picker';
+import { CameraIcon, DumbbellIcon, SaveIcon, UserRoundIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
+import { Gradient, powerGradient } from '@/components/gradient';
+import { COLORS } from '@/components/kit';
 import { ErrorView, LoadingView, Screen, ScreenHeader } from '@/components/screen';
+import { Section } from '@/components/section';
+import { Icon } from '@/components/ui/icon';
 import { PhoneNumberInput } from '@/components/phone-input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -169,57 +174,73 @@ export default function ProfileScreen() {
         <ScreenHeader title="Profile" />
       </View>
       <View className="gap-6">
-        <View className="items-center gap-3 rounded-xl border border-border bg-card p-4">
-          <Text className="font-semibold">Profile photo</Text>
-          <Pressable
-            onPress={() => void pickAvatar()}
-            disabled={uploadingAvatar}
-            className="relative active:opacity-80">
-            <Avatar alt="Profile photo" className="size-24 ring-2 ring-primary/30">
-              <AvatarImage source={{ uri: avatar }} />
-              <AvatarFallback>
-                <Text className="text-xl font-semibold">
-                  {initials(fullName || 'Trainer')}
-                </Text>
-              </AvatarFallback>
-            </Avatar>
-            {uploadingAvatar ? (
-              <View className="absolute inset-0 items-center justify-center rounded-full bg-black/45">
-                <ActivityIndicator color="#ffffff" />
-              </View>
-            ) : null}
-          </Pressable>
-          <Text variant="muted" className="text-center text-xs">
-            Optional — once uploaded this picture is shown as your avatar everywhere.
-          </Text>
-          <View className="flex-row gap-2">
-            <Button size="sm" variant="outline" disabled={uploadingAvatar} onPress={() => void pickAvatar()}>
-              <Text>{avatar ? 'Change photo' : 'Upload photo'}</Text>
-            </Button>
-            {avatar ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={uploadingAvatar}
-                onPress={async () => {
-                  try {
-                    const updated = await api<Trainer>('auth/me/', {
-                      method: 'PATCH',
-                      body: { avatar_url: '' },
-                    });
-                    setAvatar('');
-                    setTrainer(updated);
-                  } catch {
-                    setAvatar('');
-                  }
+        <Gradient colors={powerGradient} style={{ borderRadius: 28, overflow: 'hidden' }}>
+          <View className="items-center gap-3 p-5">
+            <Pressable
+              onPress={() => void pickAvatar()}
+              disabled={uploadingAvatar}
+              className="relative active:opacity-80">
+              <View
+                style={{
+                  padding: 3,
+                  borderRadius: 999,
+                  borderWidth: 2,
+                  borderColor: 'rgba(255,255,255,0.65)',
                 }}>
-                <Text>Remove</Text>
-              </Button>
-            ) : null}
+                <Avatar alt="Profile photo" className="size-24">
+                  <AvatarImage source={{ uri: avatar }} />
+                  <AvatarFallback>
+                    <Text className="text-xl font-black">{initials(fullName || 'Trainer')}</Text>
+                  </AvatarFallback>
+                </Avatar>
+              </View>
+              <View
+                className="absolute -bottom-1 -right-1 h-9 w-9 items-center justify-center rounded-full"
+                style={{ backgroundColor: COLORS.lime }}>
+                <Icon as={CameraIcon} size={16} color="#1A2503" />
+              </View>
+              {uploadingAvatar ? (
+                <View className="absolute inset-0 items-center justify-center rounded-full bg-black/45">
+                  <ActivityIndicator color="#ffffff" />
+                </View>
+              ) : null}
+            </Pressable>
+            <Text className="text-xl font-black tracking-tight text-white">{fullName || 'Trainer'}</Text>
+            <Text className="text-center text-xs text-white/80">
+              Optional — once uploaded this picture is shown as your avatar everywhere.
+            </Text>
+            <View className="flex-row gap-2">
+              <Pressable
+                disabled={uploadingAvatar}
+                onPress={() => void pickAvatar()}
+                className="h-10 items-center justify-center rounded-2xl px-4 active:opacity-80"
+                style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                <Text className="text-sm font-bold text-white">{avatar ? 'Change photo' : 'Upload photo'}</Text>
+              </Pressable>
+              {avatar ? (
+                <Pressable
+                  disabled={uploadingAvatar}
+                  className="h-10 items-center justify-center rounded-2xl px-4 active:opacity-80"
+                  style={{ backgroundColor: 'rgba(0,0,0,0.18)' }}
+                  onPress={async () => {
+                    try {
+                      const updated = await api<Trainer>('auth/me/', {
+                        method: 'PATCH',
+                        body: { avatar_url: '' },
+                      });
+                      setAvatar('');
+                      setTrainer(updated);
+                    } catch {
+                      setAvatar('');
+                    }
+                  }}>
+                  <Text className="text-sm font-bold text-white/90">Remove</Text>
+                </Pressable>
+              ) : null}
+            </View>
           </View>
-        </View>
-        <View className="gap-4 rounded-xl border border-border bg-card p-4">
-          <Text className="font-semibold">Account</Text>
+        </Gradient>
+        <Section title="Account" icon={UserRoundIcon} color={COLORS.cyan}>
           <Field label="Username" value={form.username} editable={false} autoCapitalize="none" />
           <Field
             label="Full name"
@@ -240,10 +261,9 @@ export default function ProfileScreen() {
             </Text>
             <PhoneNumberInput value={form.phone} onChange={(v) => update({ phone: v })} />
           </View>
-        </View>
+        </Section>
 
-        <View className="gap-4 rounded-xl border border-border bg-card p-4">
-          <Text className="font-semibold">Trainer details</Text>
+        <Section title="Trainer details" icon={DumbbellIcon} color={COLORS.violet}>
           <Field
             label="Gym name"
             value={form.gymName}
@@ -261,13 +281,18 @@ export default function ProfileScreen() {
             Clients with no completed session for this many days are flagged as inactive. Leave
             empty to use the default of 7 days.
           </Text>
-        </View>
+        </Section>
 
         <View className="flex-row items-center gap-3">
-          <Button disabled={saving} onPress={() => void save()}>
-            <Text>{saving ? 'Saving…' : 'Save changes'}</Text>
+          <Button disabled={saving} onPress={() => void save()} className="h-12 flex-1 rounded-2xl">
+            <Icon as={SaveIcon} size={17} color="#04110A" />
+            <Text className="font-black">{saving ? 'Saving…' : 'Save changes'}</Text>
           </Button>
-          {saved ? <Text variant="muted">Saved</Text> : null}
+          {saved ? (
+            <Text className="text-sm font-bold" style={{ color: COLORS.green }}>
+              Saved ✓
+            </Text>
+          ) : null}
         </View>
       </View>
     </Screen>

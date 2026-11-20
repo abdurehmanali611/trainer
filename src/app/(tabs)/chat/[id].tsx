@@ -239,17 +239,17 @@ export default function ConversationScreen() {
       ) : null}
 
       <View
-        className="flex-row items-center gap-2 border-t border-border bg-background px-3 py-2"
-        style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+        className="flex-row items-center gap-2 border-t border-border px-3 pt-2.5"
+        style={{ paddingBottom: 10, backgroundColor: '#0B1220' }}>
         <Pressable
           onPress={pickImages}
           hitSlop={8}
           accessibilityLabel="Add photos"
           className="h-10 w-10 items-center justify-center rounded-full active:bg-accent">
-          <Icon as={ImagePlusIcon} size={22} className="text-muted-foreground" />
+          <Icon as={ImagePlusIcon} size={22} color="#22D3EE" />
         </Pressable>
         <TextInput
-          className="h-10 flex-1 rounded-md border border-input bg-background px-3 text-base text-foreground"
+          className="h-11 flex-1 rounded-full border border-input bg-background px-4 text-base text-foreground"
           style={{ textAlignVertical: 'center' }}
           placeholder="Message"
           placeholderTextColor="#8E8E93"
@@ -262,13 +262,13 @@ export default function ConversationScreen() {
           onPress={send}
           disabled={sending || (attachments.length === 0 && !draft.trim())}
           hitSlop={8}
-          className={`h-10 w-10 items-center justify-center rounded-full bg-primary ${
+          className={`h-11 w-11 items-center justify-center rounded-full bg-primary ${
             sending || (attachments.length === 0 && !draft.trim()) ? 'opacity-50' : ''
           }`}>
           {sending ? (
             <ActivityIndicator size="small" color="#ffffff" />
           ) : (
-            <Icon as={SendIcon} size={20} className="text-primary-foreground" />
+            <Icon as={SendIcon} size={20} color="#04110A" />
           )}
         </Pressable>
       </View>
@@ -289,14 +289,14 @@ function MessageBubble({ message, onOpenImage }: { message: Message; onOpenImage
   return (
     <View className={`mb-2 flex-row ${mine ? 'justify-end' : 'justify-start'}`}>
       <View
-        className={`max-w-[80%] gap-1.5 rounded-2xl px-3 py-2 ${
-          mine ? 'bg-primary' : 'bg-secondary'
+        className={`max-w-[80%] gap-1.5 rounded-3xl px-4 py-2.5 ${
+          mine ? 'rounded-br-md bg-primary' : 'rounded-bl-md border border-border bg-card'
         }`}>
         {message.is_broadcast ? (
           <Badge label="Broadcast" tone="info" className="self-start" />
         ) : null}
         {message.kind === 'text' ? (
-          <Text className={`text-base ${mine ? 'text-primary-foreground' : 'text-secondary-foreground'}`}>
+          <Text className={`text-base ${mine ? 'text-primary-foreground' : 'text-foreground'}`}>
             {message.content}
           </Text>
         ) : null}

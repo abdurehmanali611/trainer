@@ -1,9 +1,26 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { DumbbellIcon, MessageCircleIcon, PencilIcon, SaladIcon, TargetIcon, Trash2Icon, WalletIcon } from 'lucide-react-native';
+import {
+  CameraIcon,
+  CreditCardIcon,
+  DumbbellIcon,
+  ReceiptTextIcon,
+  ShieldAlertIcon,
+  UserRoundIcon,
+  MailIcon,
+  MessageCircleIcon,
+  PencilIcon,
+  PhoneIcon,
+  SaladIcon,
+  TargetIcon,
+  Trash2Icon,
+  WalletIcon,
+} from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
+import { Gradient, powerGradient } from '@/components/gradient';
+import { alpha, Chip, COLORS, Panel } from '@/components/kit';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { PhoneNumberInput } from '@/components/phone-input';
 import {
@@ -12,9 +29,8 @@ import {
   LoadingView,
   Screen,
   toneForInvoice,
-  toneForMode,
 } from '@/components/screen';
-import { Section, Surface } from '@/components/section';
+import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { DatePopoverField } from '@/components/ui/calendar';
 import { Icon } from '@/components/ui/icon';
@@ -138,18 +154,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const TILE_TONES: Record<string, string> = {
-  success: 'bg-success/15 ring-success/30',
-  warning: 'bg-warning/15 ring-warning/30',
-  danger: 'bg-destructive/15 ring-destructive/30',
-  info: 'bg-primary/15 ring-primary/30',
-};
-
-const TILE_ICON_COLORS: Record<string, string> = {
-  success: 'text-success',
-  warning: 'text-warning',
-  danger: 'text-destructive',
-  info: 'text-primary',
+const TILE_COLORS: Record<string, string> = {
+  success: COLORS.green,
+  warning: COLORS.amber,
+  danger: COLORS.rose,
+  info: COLORS.sky,
 };
 
 function StatusTile({
@@ -165,19 +174,20 @@ function StatusTile({
   caption?: string;
   tone?: 'success' | 'warning' | 'danger' | 'info';
 }) {
-  const toneClass = TILE_TONES[tone] ?? TILE_TONES.info;
-  const iconColor = TILE_ICON_COLORS[tone] ?? TILE_ICON_COLORS.info;
+  const color = TILE_COLORS[tone] ?? COLORS.sky;
   return (
-    <Surface className="w-[48%] gap-1.5 p-3">
+    <Panel tint={color} className="w-[48.5%] gap-1.5 p-3">
       <View className="flex-row items-center gap-2">
-        <View className={`h-7 w-7 items-center justify-center rounded-lg ring-1 ${toneClass}`}>
-          <Icon as={icon} size={14} className={iconColor} />
+        <View
+          className="h-8 w-8 items-center justify-center rounded-xl"
+          style={{ backgroundColor: alpha(color, 0.18), borderWidth: 1, borderColor: alpha(color, 0.35) }}>
+          <Icon as={icon} size={15} color={color} />
         </View>
-        <Text variant="muted" className="text-[11px] font-semibold uppercase tracking-wide">
+        <Text variant="muted" className="flex-1 text-[11px] font-bold uppercase tracking-wide" numberOfLines={1}>
           {label}
         </Text>
       </View>
-      <Text className="text-sm font-semibold" numberOfLines={1}>
+      <Text className="text-sm font-black" numberOfLines={1}>
         {value}
       </Text>
       {caption ? (
@@ -185,7 +195,7 @@ function StatusTile({
           {caption}
         </Text>
       ) : null}
-    </Surface>
+    </Panel>
   );
 }
 
@@ -600,39 +610,73 @@ export default function ClientDetailScreen() {
       onRefresh={() => loadAll(true)}
       topGap={8}
       showHeader={false}>
-      <View className="mb-6 items-center gap-3">
-        <Pressable onPress={pickAvatar} disabled={uploading} className="items-center">
-          <Avatar alt={client.name} className="size-20">
-            <AvatarImage source={{ uri: client.avatar_url }} />
-            <AvatarFallback>
-              <Text className="text-lg font-semibold">{initials(client.name)}</Text>
-            </AvatarFallback>
-          </Avatar>
-          {uploading ? (
-            <View className="absolute inset-0 items-center justify-center rounded-full bg-black/40">
-              <ActivityIndicator color="#ffffff" />
+      <Gradient colors={powerGradient} style={{ borderRadius: 28, overflow: 'hidden', marginBottom: 20 }}>
+        <View className="items-center gap-3 p-5">
+          <Pressable onPress={pickAvatar} disabled={uploading} className="items-center">
+            <View
+              style={{
+                padding: 3,
+                borderRadius: 999,
+                borderWidth: 2,
+                borderColor: 'rgba(255,255,255,0.65)',
+              }}>
+              <Avatar alt={client.name} className="size-20">
+                <AvatarImage source={{ uri: client.avatar_url }} />
+                <AvatarFallback>
+                  <Text className="text-xl font-black">{initials(client.name)}</Text>
+                </AvatarFallback>
+              </Avatar>
             </View>
-          ) : null}
-        </Pressable>
-        <View className="items-center gap-1.5">
-          <View className="flex-row items-center gap-2">
-            <Text className="text-lg font-semibold">{client.name}</Text>
-            {/* Feature 18: inactive clients are visibly marked. */}
-            {!client.is_active ? <Badge label="Inactive" tone="default" /> : null}
-            <Badge label={labelize(client.mode)} tone={toneForMode[client.mode]} />
+            <View
+              className="absolute -bottom-1 -right-1 h-8 w-8 items-center justify-center rounded-full"
+              style={{ backgroundColor: COLORS.lime }}>
+              <Icon as={CameraIcon} size={15} color="#1A2503" />
+            </View>
+            {uploading ? (
+              <View className="absolute inset-0 items-center justify-center rounded-full bg-black/40">
+                <ActivityIndicator color="#ffffff" />
+              </View>
+            ) : null}
+          </Pressable>
+          <View className="items-center gap-2">
+            <Text className="text-2xl font-black tracking-tight text-white">{client.name}</Text>
+            <View className="flex-row flex-wrap items-center justify-center gap-2">
+              {/* Feature 18: inactive clients are visibly marked. */}
+              {!client.is_active ? <Chip label="Inactive" color={COLORS.muted} /> : null}
+              <View className="rounded-full bg-black/25 px-3 py-1">
+                <Text className="text-xs font-bold capitalize text-white">{labelize(client.mode)} plan</Text>
+              </View>
+            </View>
+            <View className="items-center gap-1">
+              {client.phone ? (
+                <View className="flex-row items-center gap-1.5">
+                  <Icon as={PhoneIcon} size={12} color="rgba(255,255,255,0.75)" />
+                  <Text className="text-xs font-medium text-white/80">{client.phone}</Text>
+                </View>
+              ) : null}
+              {client.email ? (
+                <View className="flex-row items-center gap-1.5">
+                  <Icon as={MailIcon} size={12} color="rgba(255,255,255,0.75)" />
+                  <Text className="text-xs font-medium text-white/80">{client.email}</Text>
+                </View>
+              ) : null}
+            </View>
           </View>
-          <Text variant="muted" className="text-xs">
-            {client.phone} · {client.email}
-          </Text>
+          <Pressable
+            onPress={() => router.push(`/chat/${id}`)}
+            accessibilityRole="button"
+            className="h-11 flex-row items-center gap-2 rounded-2xl px-5 active:opacity-80"
+            style={{ backgroundColor: 'rgba(0,0,0,0.3)' }}>
+            <Icon as={MessageCircleIcon} size={17} color="#ffffff" />
+            <Text className="text-sm font-black text-white">Open chat</Text>
+          </Pressable>
         </View>
-        <Button variant="outline" size="sm" onPress={() => router.push(`/chat/${id}`)}>
-          <Icon as={MessageCircleIcon} size={16} />
-          <Text className="text-sm">Open chat</Text>
-        </Button>
-      </View>
+      </Gradient>
 
       <View className="gap-4">
-        <Surface className="gap-2 p-4">
+        <Panel
+          tint={access.tone === 'success' ? COLORS.green : access.tone === 'danger' ? COLORS.rose : COLORS.amber}
+          className="gap-2">
           <Badge label={access.label} tone={access.tone} />
           <Text variant="muted" className="text-xs">
             {accessState.reason || access.explain}
@@ -684,10 +728,10 @@ export default function ClientDetailScreen() {
               Login OTP: {client.otp}
             </Text>
           ) : null}
-        </Surface>
+        </Panel>
 
         <View className="gap-2">
-          <Text className="text-sm font-semibold">Status</Text>
+          <Text className="text-[15px] font-bold tracking-tight">Status</Text>
           <View className="flex-row flex-wrap gap-2.5">
             <StatusTile
               icon={TargetIcon}
@@ -742,7 +786,7 @@ export default function ClientDetailScreen() {
           </View>
         </View>
 
-        <Section title="Profile">
+        <Section title="Profile" icon={UserRoundIcon} color={COLORS.cyan}>
           <View className="gap-3">
             <Field label="Name">
               <Input value={form.name} onChangeText={(v) => setForm((f) => (f ? { ...f, name: v } : f))} />
@@ -835,7 +879,7 @@ export default function ClientDetailScreen() {
           </View>
         </Section>
 
-        <Section title="Subscription">
+        <Section title="Subscription" icon={CreditCardIcon} color={COLORS.green}>
           <View className="gap-2">
             {periods.length === 0 ? (
               <Text variant="muted" className="text-sm">
@@ -963,7 +1007,7 @@ export default function ClientDetailScreen() {
           </View>
         </Section>
 
-        <Section title="Invoices">
+        <Section title="Invoices" icon={ReceiptTextIcon} color={COLORS.amber}>
           {invoices.length === 0 ? (
             <Text variant="muted" className="text-sm">
               No invoices for this client.
@@ -984,7 +1028,7 @@ export default function ClientDetailScreen() {
           )}
         </Section>
 
-        <Section title="Danger zone">
+        <Section title="Danger zone" icon={ShieldAlertIcon} color={COLORS.rose} tinted>
           {/* Feature 18: soft deactivate/reactivate toggle — never a delete.
               The trash icon for permanent deletion lives in the Clients list. */}
           <Button

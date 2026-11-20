@@ -1,8 +1,12 @@
 import * as React from 'react';
 import { Alert, View } from 'react-native';
+import { BanknoteIcon, LandmarkIcon, SaveIcon, SmartphoneIcon } from 'lucide-react-native';
 
+import { COLORS } from '@/components/kit';
 import { ErrorView, LoadingView, Screen, ScreenHeader } from '@/components/screen';
+import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
 import { Textarea } from '@/components/ui/textarea';
@@ -121,8 +125,7 @@ export default function PaymentInstructionsScreen() {
         subtitle="How your clients pay you — reused when you create a client."
       />
       <View className="gap-6">
-        <View className="gap-4 rounded-xl border border-border bg-card p-4">
-          <Text className="font-semibold">Telebirr</Text>
+        <Section title="Telebirr" icon={SmartphoneIcon} color={COLORS.green}>
           <Field
             label="Telebirr number"
             value={form.telebirrNumber}
@@ -130,10 +133,9 @@ export default function PaymentInstructionsScreen() {
             keyboardType="phone-pad"
             placeholder="09…"
           />
-        </View>
+        </Section>
 
-        <View className="gap-4 rounded-xl border border-border bg-card p-4">
-          <Text className="font-semibold">Bank transfer</Text>
+        <Section title="Bank transfer" icon={LandmarkIcon} color={COLORS.sky}>
           <Field
             label="Bank name"
             value={form.bankName}
@@ -150,10 +152,9 @@ export default function PaymentInstructionsScreen() {
             onChangeText={(v) => update({ bankAccountNumber: v })}
             keyboardType="number-pad"
           />
-        </View>
+        </Section>
 
-        <View className="gap-4 rounded-xl border border-border bg-card p-4">
-          <Text className="font-semibold">Cash</Text>
+        <Section title="Cash" icon={BanknoteIcon} color={COLORS.amber}>
           <View className="gap-1.5">
             <Text variant="muted" className="text-xs">
               Note for cash payments
@@ -164,13 +165,18 @@ export default function PaymentInstructionsScreen() {
               placeholder="e.g. Pay at the gym front desk"
             />
           </View>
-        </View>
+        </Section>
 
         <View className="flex-row items-center gap-3">
-          <Button disabled={saving} onPress={() => void save()}>
-            <Text>{saving ? 'Saving…' : 'Save instructions'}</Text>
+          <Button disabled={saving} onPress={() => void save()} className="h-12 flex-1 rounded-2xl">
+            <Icon as={SaveIcon} size={17} color="#04110A" />
+            <Text className="font-black">{saving ? 'Saving…' : 'Save instructions'}</Text>
           </Button>
-          {saved ? <Text variant="muted">Saved</Text> : null}
+          {saved ? (
+            <Text className="text-sm font-bold" style={{ color: COLORS.green }}>
+              Saved ✓
+            </Text>
+          ) : null}
         </View>
 
         <Text variant="muted" className="text-xs">

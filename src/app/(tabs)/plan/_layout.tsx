@@ -1,25 +1,12 @@
-import { Stack, useRouter } from 'expo-router';
-import { ChevronLeftIcon } from 'lucide-react-native';
-import { Pressable } from 'react-native';
+import { Stack } from 'expo-router';
 
-import { Icon } from '@/components/ui/icon';
-
+/**
+ * The editors render the app header (with its own back chevron) inside the
+ * page, so the native stack header is hidden — otherwise two back buttons show.
+ */
 export default function PlanLayout() {
-  const router = useRouter();
   return (
-    <Stack
-      screenOptions={{
-        headerShown: true,
-        headerLeft: () => (
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={10}
-            accessibilityLabel="Go back"
-            className="-ml-1 pr-3 active:opacity-60">
-            <Icon as={ChevronLeftIcon} size={22} />
-          </Pressable>
-        ),
-      }}>
+    <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="workout/[id]" options={{ title: 'Workout plan' }} />
       <Stack.Screen name="diet/[id]" options={{ title: 'Diet plan' }} />
     </Stack>

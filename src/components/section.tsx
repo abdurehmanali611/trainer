@@ -1,43 +1,62 @@
+import type { LucideIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { Pressable, View, type PressableProps, type ViewProps } from 'react-native';
 
+import { alpha, COLORS, IconBubble } from '@/components/kit';
 import { Text } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 
 /**
- * Card section — hotcol/pharmacy style: quiet elevated surface, one title.
+ * Card section — rounded surface with a coloured accent (icon bubble or a slim
+ * accent bar) next to the title. Pass `color` to tint the card for a feature.
  */
 export function Section({
   title,
   subtitle,
   action,
+  icon,
+  color = COLORS.green,
+  tinted = false,
   className,
   children,
+  style,
   ...props
 }: ViewProps & {
   title?: string;
   subtitle?: string;
   action?: React.ReactNode;
+  icon?: LucideIcon;
+  color?: string;
+  /** Tint the whole card with `color` instead of the neutral surface. */
+  tinted?: boolean;
   children?: React.ReactNode;
 }) {
   return (
     <View
-      className={cn(
-        'gap-4 rounded-xl border border-border bg-card p-4 shadow-sm shadow-black/30',
-        className
-      )}
+      className={cn('gap-4 rounded-3xl border border-border bg-card p-4', className)}
+      style={[
+        tinted ? { backgroundColor: alpha(color, 0.08), borderColor: alpha(color, 0.3) } : null,
+        style,
+      ]}
       {...props}>
       {title || action ? (
-        <View className="flex-row items-start justify-between gap-3">
-          <View className="min-w-0 flex-1 gap-1">
-            {title ? (
-              <Text className="text-[15px] font-semibold text-foreground">{title}</Text>
+        <View className="flex-row items-center justify-between gap-3">
+          <View className="min-w-0 flex-1 flex-row items-center gap-2.5">
+            {icon ? (
+              <IconBubble icon={icon} color={color} size={32} />
+            ) : title ? (
+              <View style={{ width: 4, height: 18, borderRadius: 2, backgroundColor: color }} />
             ) : null}
-            {subtitle ? (
-              <Text variant="muted" className="text-xs">
-                {subtitle}
-              </Text>
-            ) : null}
+            <View className="min-w-0 flex-1 gap-0.5">
+              {title ? (
+                <Text className="text-[15px] font-bold tracking-tight text-foreground">{title}</Text>
+              ) : null}
+              {subtitle ? (
+                <Text variant="muted" className="text-xs">
+                  {subtitle}
+                </Text>
+              ) : null}
+            </View>
           </View>
           {action}
         </View>
@@ -66,49 +85,14 @@ export function FormPanel({
 }
 
 export function Surface({ className, ...props }: ViewProps) {
-  return (
-    <View
-      className={cn('rounded-xl border border-border bg-card shadow-sm shadow-black/30', className)}
-      {...props}
-    />
-  );
+  return <View className={cn('rounded-3xl border border-border bg-card', className)} {...props} />;
 }
 
 export function SurfacePressable({ className, ...props }: PressableProps) {
   return (
     <Pressable
-      className={cn(
-        'rounded-xl border border-border bg-card shadow-sm shadow-black/30 active:bg-secondary',
-        className
-      )}
+      className={cn('rounded-3xl border border-border bg-card active:opacity-80', className)}
       {...props}
     />
-  );
-}
-
-/** Metric tile — default quiet; only warning/danger tint when needed. */
-export function StatTile({
-  label,
-  value,
-  tone = 'default',
-  className,
-}: {
-  label: string;
-  value: string;
-  tone?: 'default' | 'primary' | 'warning' | 'danger' | 'muted';
-  className?: string;
-}) {
-  const tones: Record<string, string> = {
-    default: 'border-border bg-secondary',
-    primary: 'border-border bg-secondary',
-    muted: 'border-border bg-secondary/70',
-    warning: 'border-warning/30 bg-warning/10',
-    danger: 'border-destructive/30 bg-destructive/10',
-  };
-  return (
-    <View className={cn('min-w-0 flex-1 gap-1.5 rounded-lg border p-3', tones[tone], className)}>
-      <Text className="text-2xl font-semibold tabular-nums text-foreground">{value}</Text>
-      <Text className="text-xs text-muted-foreground">{label}</Text>
-    </View>
   );
 }

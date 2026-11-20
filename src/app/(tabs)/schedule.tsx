@@ -1,8 +1,18 @@
 import * as React from 'react';
 import { Alert, Pressable, View } from 'react-native';
-import { CalendarPlusIcon, DumbbellIcon, NotebookPenIcon, UserIcon, VideoIcon } from 'lucide-react-native';
+import {
+  CalendarClockIcon,
+  CalendarDaysIcon,
+  CalendarPlusIcon,
+  DumbbellIcon,
+  InboxIcon,
+  NotebookPenIcon,
+  UserIcon,
+  VideoIcon,
+} from 'lucide-react-native';
 
 import { Badge, EmptyView, ErrorView, LoadingView, Screen, toneForRequest, toneForSession } from '@/components/screen';
+import { alpha, COLORS, Panel, Segmented } from '@/components/kit';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,7 +27,6 @@ import {
 } from '@/components/ui/dialog';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { SwipeRail } from '@/components/swipe-rail';
 import { Switch } from '@/components/ui/switch';
 import { Text } from '@/components/ui/text';
 import { Combobox } from '@/components/ui/combobox';
@@ -98,26 +107,38 @@ function withValidEnd<
   };
 }
 
+const STATUS_COLOR: Record<string, string> = {
+  scheduled: COLORS.sky,
+  approved: COLORS.green,
+  completed: COLORS.green,
+  canceled: COLORS.muted,
+  no_show: COLORS.rose,
+  rescheduling: COLORS.amber,
+};
+
 function SessionRow({ session, onPress }: { session: Session; onPress: () => void }) {
+  const accent = STATUS_COLOR[session.status] ?? COLORS.sky;
   return (
-    <Pressable
-      onPress={onPress}
-      className="flex-row items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 shadow-sm shadow-black/30 active:opacity-70">
-      <View className="w-16 gap-0.5">
-        <Text className="font-semibold">{clockTime(session.time)}</Text>
-        <Text variant="muted" className="text-xs">
+    <Panel onPress={onPress} className="flex-row items-center gap-3 p-3">
+      <View
+        className="w-[68px] items-center rounded-2xl py-2"
+        style={{ backgroundColor: alpha(accent, 0.16) }}>
+        <Text className="text-sm font-black" style={{ color: accent }}>
+          {clockTime(session.time)}
+        </Text>
+        <Text className="text-[11px] font-semibold" style={{ color: alpha(accent, 0.85) }}>
           {session.duration_minutes} min
         </Text>
       </View>
       <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-sm font-medium" numberOfLines={1}>
+        <Text className="text-[15px] font-bold" numberOfLines={1}>
           {session.client_name}
         </Text>
         <View className="flex-row items-center gap-1.5">
           <Icon
             as={session.is_online ? VideoIcon : UserIcon}
             size={13}
-            className="text-muted-foreground"
+            color={session.is_online ? COLORS.cyan : COLORS.muted}
           />
           <Text variant="muted" className="text-xs">
             {session.is_online ? 'Online' : 'In person'}
@@ -128,7 +149,7 @@ function SessionRow({ session, onPress }: { session: Session; onPress: () => voi
         label={STATUS_LABELS[session.status] ?? session.status}
         tone={toneForSession[session.status] ?? 'info'}
       />
-    </Pressable>
+    </Panel>
   );
 }
 
@@ -148,7 +169,9 @@ function RequestRow({
   onReview: () => void;
 }) {
   return (
-    <View className="gap-2 rounded-xl border border-border bg-card p-4 shadow-sm shadow-black/30">
+    <View
+      className="gap-2 rounded-2xl border p-4"
+      style={{ backgroundColor: alpha(COLORS.amber, 0.07), borderColor: alpha(COLORS.amber, 0.28) }}>
       <View className="flex-row items-start justify-between gap-3">
         <View className="min-w-0 flex-1 gap-0.5">
           <Text className="text-sm font-medium" numberOfLines={1}>
@@ -174,7 +197,6 @@ function RequestRow({
 
 export default function ScheduleScreen() {
   const [tab, setTab] = React.useState<TabValue>('sessions');
-  const [lit, setLit] = React.useState<0 | 1>(0);
   const [sessions, setSessions] = React.useState<Session[]>([]);
   const [reschedules, setReschedules] = React.useState<RescheduleRequest[]>([]);
   const [permissions, setPermissions] = React.useState<PermissionRequest[]>([]);
@@ -613,63 +635,54 @@ export default function ScheduleScreen() {
 
   return (
     <Screen refreshing={refreshing} onRefresh={() => void load()}>
+      <View className="mb-4 mt-2">
+        <Segmented<TabValue>
+          value={tab}
+          onChange={setTab}
+          options={[
+            { key: 'sessions', label: 'Sessions', icon: CalendarDaysIcon },
+            {
+              key: 'requests',
+              label: pendingCount > 0 ? `Requests (${pendingCount})` : 'Requests',
+              icon: InboxIcon,
+            },
+          ]}
+        />
+      </View>
+
       {tab === 'sessions' ? (
-        <>
-          <View className="mb-5 mt-5 flex-row justify-end">
-            <Button
-              size="sm"
-              className="px-5"
-              onPress={() => {
-                setDraft({
-                  clientId: '',
-                  startDate: todayISO(),
-                  startTime: '09:00',
-                  endDate: todayISO(),
-                  endTime: '10:00',
-                  notes: '',
-                  isOnline: false,
-                  workoutIds: [],
-                  dietIds: [],
-                });
-                setAddOpen(true);
-              }}>
-              <Icon as={CalendarPlusIcon} size={16} />
-              <Text>Add</Text>
-            </Button>
+        <View className="mb-4 flex-row items-center justify-between gap-3">
+          <View className="min-w-0 flex-1">
+            <Text className="text-[26px] font-black tracking-tight">Sessions</Text>
+            <Text variant="muted" className="text-[13px]">
+              {`${sessions.length} scheduled`}
+            </Text>
           </View>
-          <View className="mb-1.25 flex-row items-start justify-between gap-3">
-            <View className="min-w-0 flex-1 gap-0.5 pt-1">
-              <Text variant="h2">Sessions</Text>
-              <Text variant="muted" className="text-xs">
-                {`${sessions.length} scheduled`}
-              </Text>
-            </View>
-            <SwipeRail
-              direction="forward"
-              label="Swipe to Requests"
-              lit={lit}
-              onLitChange={setLit}
-              onPress={() => setTab('requests')}
-            />
-          </View>
-        </>
-      ) : (
-        <View className="mb-4 mt-2 flex-row items-start justify-between gap-3">
-          <View className="flex-row items-center gap-2 pt-1">
-            <Text variant="h2">Requests</Text>
-            {pendingCount > 0 ? (
-              <View className="rounded-full bg-destructive px-1.5">
-                <Text className="text-xs font-semibold text-white">{pendingCount}</Text>
-              </View>
-            ) : null}
-          </View>
-          <SwipeRail
-            direction="back"
-            label="Swipe to Sessions"
-            onPress={() => setTab('sessions')}
-          />
+          <Pressable
+            accessibilityRole="button"
+            className="h-12 flex-row items-center gap-2 rounded-2xl px-4 active:opacity-80"
+            style={{ backgroundColor: COLORS.amber }}
+            onPress={() => {
+              setDraft({
+                clientId: '',
+                startDate: todayISO(),
+                startTime: '09:00',
+                endDate: todayISO(),
+                endTime: '10:00',
+                notes: '',
+                isOnline: false,
+                workoutIds: [],
+                dietIds: [],
+              });
+              setAddOpen(true);
+            }}>
+            <Icon as={CalendarPlusIcon} size={18} color="#1A1203" />
+            <Text className="text-sm font-black" style={{ color: '#1A1203' }}>
+              Add
+            </Text>
+          </Pressable>
         </View>
-      )}
+      ) : null}
 
       {tab === 'sessions' ? (
         <View className="gap-4">
@@ -685,7 +698,12 @@ export default function ScheduleScreen() {
             />
           ) : (
             groups.map(([date, items]) => (
-              <Section key={date} title={dayLabel(date)} className="gap-2.5">
+              <Section
+                key={date}
+                title={dayLabel(date)}
+                icon={CalendarClockIcon}
+                color={COLORS.amber}
+                className="gap-2.5">
                 {items.map((session) => (
                   <SessionRow
                     key={session.id}
@@ -699,7 +717,7 @@ export default function ScheduleScreen() {
         </View>
       ) : (
         <View className="gap-4">
-          <Section title="Reschedule requests" className="gap-3">
+          <Section title="Reschedule requests" icon={CalendarClockIcon} color={COLORS.sky} className="gap-3">
             {reschedules.length === 0 ? (
               <Text variant="muted">No pending reschedule requests.</Text>
             ) : (
@@ -728,7 +746,7 @@ export default function ScheduleScreen() {
             )}
           </Section>
 
-          <Section title="Permission requests" className="gap-3">
+          <Section title="Permission requests" icon={InboxIcon} color={COLORS.violet} className="gap-3">
             {permissions.length === 0 ? (
               <Text variant="muted">No pending permission requests.</Text>
             ) : (

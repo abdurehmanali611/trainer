@@ -1,5 +1,5 @@
 /**
- * Dark system theme — teal primary on slate navy (hotcol-aligned).
+ * FitPilot theme — near-black base, vivid green/lime brand, colourful accents.
  */
 
 import '@/global.css';
@@ -8,22 +8,22 @@ import { Platform } from 'react-native';
 
 export const Colors = {
   light: {
-    text: '#F1F5F9',
-    background: '#0B1220',
-    backgroundElement: '#1A2332',
-    backgroundSelected: '#243044',
+    text: '#F0FDFA',
+    background: '#070B14',
+    backgroundElement: '#101826',
+    backgroundSelected: '#16222F',
     textSecondary: '#94A3B8',
-    primary: '#2DD4BF',
-    accent: '#F5B042',
+    primary: '#34D860',
+    accent: '#A3E635',
   },
   dark: {
-    text: '#F1F5F9',
-    background: '#0B1220',
-    backgroundElement: '#1A2332',
-    backgroundSelected: '#243044',
+    text: '#F0FDFA',
+    background: '#070B14',
+    backgroundElement: '#101826',
+    backgroundSelected: '#16222F',
     textSecondary: '#94A3B8',
-    primary: '#2DD4BF',
-    accent: '#F5B042',
+    primary: '#34D860',
+    accent: '#A3E635',
   },
 } as const;
 
