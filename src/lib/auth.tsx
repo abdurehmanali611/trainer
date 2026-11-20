@@ -105,7 +105,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         platform: PlatformBilling;
       }>('auth/login/', { method: 'POST', body: { username, password }, auth: false });
       await saveTokens(res.access, res.refresh);
-      setState({ status: 'signedIn', trainer: res.trainer, platform: res.platform ?? null });
+      // The sign-in payload can be a trimmed profile (an older backend omits the
+      // photo), so load the full one — the header shows the profile photo.
+      const trainer = await api<Trainer>('auth/me/').catch(() => res.trainer);
+      setState({ status: 'signedIn', trainer, platform: res.platform ?? null });
     } catch (error) {
       const blocked = readBlocked(error);
       if (blocked) throw blocked;
@@ -121,7 +124,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       platform: PlatformBilling;
     }>('auth/register/', { method: 'POST', body: payload, auth: false });
     await saveTokens(res.access, res.refresh);
-    setState({ status: 'signedIn', trainer: res.trainer, platform: res.platform ?? null });
+    const trainer = await api<Trainer>('auth/me/').catch(() => res.trainer);
+    setState({ status: 'signedIn', trainer, platform: res.platform ?? null });
   }, []);
 
   const signOut = React.useCallback(async () => {

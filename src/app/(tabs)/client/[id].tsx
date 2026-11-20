@@ -2,23 +2,21 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import {
   CameraIcon,
-  CreditCardIcon,
   DumbbellIcon,
   ReceiptTextIcon,
   ShieldAlertIcon,
   UserRoundIcon,
   MailIcon,
   MessageCircleIcon,
-  PencilIcon,
   PhoneIcon,
   SaladIcon,
   TargetIcon,
-  Trash2Icon,
   WalletIcon,
 } from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, Alert, Pressable, View } from 'react-native';
 
+import { ClientPaymentSection } from '@/components/client-payment';
 import { Gradient, powerGradient } from '@/components/gradient';
 import { alpha, Chip, COLORS, Panel } from '@/components/kit';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -32,23 +30,11 @@ import {
 } from '@/components/screen';
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
-import { DatePopoverField } from '@/components/ui/calendar';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  type Option,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
 import { Text } from '@/components/ui/text';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api';
-import { useAuth } from '@/lib/auth';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { relativeTime, shortDate } from '@/lib/dates';
 import {
@@ -62,18 +48,11 @@ import {
 import type {
   AccessState,
   Client,
-  ClientMode,
   Invoice,
   Payment,
   Paginated,
   SubscriptionPeriod,
 } from '@/lib/types';
-
-const MODE_OPTIONS: { value: ClientMode; label: string }[] = [
-  { value: 'paid', label: 'Paid' },
-  { value: 'trial', label: 'Trial' },
-  { value: 'illustrative', label: 'Illustrative' },
-];
 
 const ACCESS_META: Record<
   AccessState['state'],
@@ -87,7 +66,7 @@ const ACCESS_META: Record<
   blocked_unpaid: {
     label: 'Blocked — unpaid',
     tone: 'danger',
-    explain: 'Access is blocked until the latest invoice is approved or forgiven.',
+    explain: 'The payment request and grace period have passed. Approve their payment or forgive the invoice to restore access.',
   },
   blocked_no_period: {
     label: 'No period yet',
@@ -105,7 +84,6 @@ interface ClientForm {
   name: string;
   phone: string;
   email: string;
-  mode: Option;
   goals: string;
   medical_history: string;
   emergency_name: string;
@@ -125,7 +103,6 @@ function formFromClient(client: Client): ClientForm {
     name: client.name,
     phone: client.phone,
     email: client.email,
-    mode: { value: client.mode, label: labelize(client.mode) },
     goals: (client.goals ?? []).join(', '),
     medical_history: client.medical_history ?? '',
     emergency_name: emergencyName,
@@ -286,7 +263,6 @@ function InvoiceCard({
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { trainer } = useAuth();
   const [client, setClient] = React.useState<Client | null>(null);
   const [periods, setPeriods] = React.useState<SubscriptionPeriod[]>([]);
   const [invoices, setInvoices] = React.useState<Invoice[]>([]);
@@ -307,13 +283,6 @@ export default function ClientDetailScreen() {
   const [uploading, setUploading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [resettingOtp, setResettingOtp] = React.useState(false);
-  const [periodStart, setPeriodStart] = React.useState('');
-  const [periodEnd, setPeriodEnd] = React.useState('');
-  const [periodTrial, setPeriodTrial] = React.useState(false);
-  const [periodAmount, setPeriodAmount] = React.useState('');
-  const [savingPeriod, setSavingPeriod] = React.useState(false);
-  // Feature 9: when set, the Add-period form is in EDIT mode for this row.
-  const [editingPeriod, setEditingPeriod] = React.useState<SubscriptionPeriod | null>(null);
 
   const loadAll = React.useCallback(
     async (silent?: boolean) => {
@@ -397,7 +366,6 @@ export default function ClientDetailScreen() {
           name: form.name.trim(),
           phone: form.phone.trim(),
           email: form.email.trim(),
-          mode: form.mode?.value ?? 'paid',
           goals: form.goals
             .split(',')
             .map((g) => g.trim())
@@ -419,105 +387,6 @@ export default function ClientDetailScreen() {
       Alert.alert('Save failed', e instanceof Error ? e.message : 'Something went wrong.');
     } finally {
       setSaving(false);
-    }
-  }
-
-  function startEditPeriod(p: SubscriptionPeriod) {
-    // Feature 9: reuse the Add-period form as an editor.
-    setEditingPeriod(p);
-    setPeriodStart(p.start_date);
-    setPeriodEnd(p.end_date);
-    setPeriodTrial(p.is_trial);
-    setPeriodAmount(p.is_trial ? '0' : String(Number(p.amount)));
-  }
-
-  function cancelEditPeriod() {
-    setEditingPeriod(null);
-    setPeriodStart('');
-    setPeriodEnd('');
-    setPeriodTrial(false);
-    setPeriodAmount('');
-  }
-
-  function deletePeriod(p: SubscriptionPeriod) {
-    Alert.alert(
-      'Delete period',
-      `Delete ${shortDate(p.start_date)} → ${shortDate(p.end_date)}? ` +
-        'Its pending invoice is removed too (paid/forgiven history is kept).',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setSavingPeriod(true);
-            try {
-              await api(`periods/${p.id}/`, { method: 'DELETE' });
-              await loadAll(true);
-            } catch (e) {
-              Alert.alert(
-                'Could not delete period',
-                e instanceof Error ? e.message : 'Something went wrong.'
-              );
-            } finally {
-              setSavingPeriod(false);
-            }
-          },
-        },
-      ]
-    );
-  }
-
-  async function addPeriod() {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(periodStart) || !/^\d{4}-\d{2}-\d{2}$/.test(periodEnd)) {
-      Alert.alert('Invalid dates', 'Pick both a start and an end date.');
-      return;
-    }
-    if (periodEnd < periodStart) {
-      Alert.alert('Invalid dates', 'The end date must be on or after the start date.');
-      return;
-    }
-    // Feature 8: paid periods must be > 0 (trial amounts are forced to 0 and
-    // the field is disabled, so this only ever runs for paid periods).
-    const amountValue = Number(periodAmount.trim());
-    if (!periodTrial && (!periodAmount.trim() || !Number.isFinite(amountValue) || amountValue <= 0)) {
-      Alert.alert('Invalid amount', 'A paid period needs an amount greater than 0.');
-      return;
-    }
-    const editing = editingPeriod !== null;
-    setSavingPeriod(true);
-    try {
-      const body = {
-        start_date: periodStart,
-        end_date: periodEnd,
-        is_trial: periodTrial,
-        amount: periodTrial ? '0' : periodAmount.trim(),
-      };
-      if (editing) {
-        // Feature 9: PATCH the saved row (partial — package stays untouched).
-        await api(`periods/${editingPeriod!.id}/`, { method: 'PATCH', body });
-        Alert.alert('Period updated', 'The subscription period was saved.');
-        cancelEditPeriod();
-      } else {
-        await api('periods/', {
-          method: 'POST',
-          // The backend reads `client_id` (and optional `package_id`), not `client`.
-          body: { client_id: Number(id), ...body },
-        });
-        Alert.alert('Period added', 'The subscription period was created.');
-        setPeriodStart('');
-        setPeriodEnd('');
-        setPeriodTrial(false);
-        setPeriodAmount('');
-      }
-      await loadAll(true);
-    } catch (e) {
-      Alert.alert(
-        editing ? 'Could not update period' : 'Could not add period',
-        e instanceof Error ? e.message : 'Something went wrong.'
-      );
-    } finally {
-      setSavingPeriod(false);
     }
   }
 
@@ -592,17 +461,29 @@ export default function ClientDetailScreen() {
   const unpaidCount = invoices.filter(
     (inv) => inv.status === 'pending' || inv.status === 'overdue'
   ).length;
-  const lastPeriod = periods[0] ?? null;
-  const paymentInstructions: [string, string][] = trainer
-    ? ([
-        ['Telebirr number', trainer.telebirr_number],
-        ['Bank name', trainer.bank_name],
-        ['Account name', trainer.bank_account_name],
-        ['Account number', trainer.bank_account_number],
-        ['Cash note', trainer.cash_note],
-      ] as [string, string][]).filter(([, value]) => (value ?? '').trim().length > 0)
-    : [];
-  const hasInstructions = paymentInstructions.length > 0;
+  const kind = client.status_kind ?? 'paid';
+  const phase = client.payment_timeline?.phase ?? 'none';
+  const paymentTile = client.is_blocked
+    ? { value: 'Blocked — unpaid', tone: 'danger' as const }
+    : kind === 'trial'
+      ? { value: 'Free trial', tone: 'info' as const }
+      : kind === 'discount'
+        ? { value: 'Discount', tone: 'info' as const }
+        : kind === 'illustration'
+          ? { value: 'Illustration', tone: 'info' as const }
+          : phase === 'covered'
+            ? { value: 'All settled', tone: 'success' as const }
+            : phase === 'ask' || phase === 'grace'
+              ? { value: 'Payment requested', tone: 'warning' as const }
+              : { value: unpaidCount > 0 ? `${unpaidCount} unpaid` : 'Not due yet', tone: 'success' as const };
+  const paymentCaption =
+    kind === 'illustration'
+      ? 'Never pays'
+      : client.payment_timeline?.due_on
+        ? `Due ${shortDate(client.payment_timeline.due_on)}`
+        : client.payment_timeline?.cycle_end
+          ? `Until ${shortDate(client.payment_timeline.cycle_end)}`
+          : '—';
 
   return (
     <Screen
@@ -644,7 +525,7 @@ export default function ClientDetailScreen() {
               {/* Feature 18: inactive clients are visibly marked. */}
               {!client.is_active ? <Chip label="Inactive" color={COLORS.muted} /> : null}
               <View className="rounded-full bg-black/25 px-3 py-1">
-                <Text className="text-xs font-bold capitalize text-white">{labelize(client.mode)} plan</Text>
+                <Text className="text-xs font-bold capitalize text-white">{kind}{kind === 'illustration' ? '' : ' plan'}</Text>
               </View>
             </View>
             <View className="items-center gap-1">
@@ -769,19 +650,9 @@ export default function ClientDetailScreen() {
             <StatusTile
               icon={WalletIcon}
               label="Payment"
-              value={
-                unpaidCount > 0
-                  ? `${unpaidCount} unpaid invoice${unpaidCount === 1 ? '' : 's'}`
-                  : periods.length > 0
-                    ? 'All settled'
-                    : 'No billing yet'
-              }
-              caption={
-                lastPeriod
-                  ? `Period ${shortDate(lastPeriod.start_date)} → ${shortDate(lastPeriod.end_date)}`
-                  : 'Add a subscription period below'
-              }
-              tone={unpaidCount > 0 ? 'danger' : periods.length > 0 ? 'success' : 'warning'}
+              value={paymentTile.value}
+              caption={paymentCaption}
+              tone={paymentTile.tone}
             />
           </View>
         </View>
@@ -805,20 +676,6 @@ export default function ClientDetailScreen() {
                 value={form.email}
                 onChangeText={(v) => setForm((f) => (f ? { ...f, email: v } : f))}
               />
-            </Field>
-            <Field label="Mode">
-              <Select
-                value={form.mode}
-                onValueChange={(opt) => setForm((f) => (f ? { ...f, mode: opt } : f))}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value} label={opt.label} />
-                  ))}
-                </SelectContent>
-              </Select>
             </Field>
             <Field label="Goals (comma separated)">
               <Input
@@ -879,133 +736,7 @@ export default function ClientDetailScreen() {
           </View>
         </Section>
 
-        <Section title="Subscription" icon={CreditCardIcon} color={COLORS.green}>
-          <View className="gap-2">
-            {periods.length === 0 ? (
-              <Text variant="muted" className="text-sm">
-                No subscription periods yet.
-              </Text>
-            ) : (
-              periods.slice(0, 5).map((p) => (
-                <View
-                  key={p.id}
-                  className="border-border flex-row items-center justify-between gap-2 rounded-lg border px-3 py-2.5">
-                  <View className="flex-1 gap-0.5">
-                    <Text className="text-sm">
-                      {shortDate(p.start_date)} → {shortDate(p.end_date)}
-                    </Text>
-                    <Text variant="muted" className="text-xs">
-                      {formatMoney(p.amount)}
-                      {p.package_name ? ` · ${p.package_name}` : ''}
-                    </Text>
-                  </View>
-                  <View className="flex-row items-center gap-1">
-                    {p.is_trial ? <Badge label="Trial" tone="info" /> : null}
-                    {/* Feature 9: edit reuses the Add-period form; delete asks first. */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={savingPeriod}
-                      onPress={() => startEditPeriod(p)}>
-                      <Icon as={PencilIcon} size={16} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={savingPeriod}
-                      onPress={() => deletePeriod(p)}>
-                      <Icon as={Trash2Icon} size={16} className="text-destructive" />
-                    </Button>
-                  </View>
-                </View>
-              ))
-            )}
-          </View>
-
-          <Separator />
-
-          <View className="gap-3">
-            <Text className="text-sm font-medium">
-              {editingPeriod ? 'Edit period' : 'Add period'}
-            </Text>
-            <View className="gap-3 web:flex-row">
-              <DatePopoverField
-                label="Start date"
-                value={periodStart}
-                onChange={setPeriodStart}
-                placeholder="Pick a date"
-                className="flex-1"
-              />
-              <DatePopoverField
-                label="End date"
-                minDate={periodStart || undefined}
-                value={periodEnd}
-                onChange={setPeriodEnd}
-                placeholder="Pick a date"
-                className="flex-1"
-              />
-            </View>
-            <Field label="Amount">
-              <Input
-                keyboardType="decimal-pad"
-                value={periodAmount}
-                onChangeText={setPeriodAmount}
-                // Feature 8: a free trial is always 0 and cannot be edited.
-                editable={!periodTrial}
-                placeholder={periodTrial ? '0 (free trial)' : 'Amount'}
-              />
-            </Field>
-            <View className="flex-row items-center justify-between">
-              <Text variant="muted" className="text-sm">
-                Free trial period
-              </Text>
-              <Switch
-                checked={periodTrial}
-                onCheckedChange={(checked) => {
-                  setPeriodTrial(checked);
-                  // Feature 8: turning the trial ON forces the amount to 0.
-                  if (checked) setPeriodAmount('0');
-                }}
-              />
-            </View>
-            <Button variant="outline" disabled={savingPeriod} onPress={addPeriod}>
-              <Text>
-                {savingPeriod
-                  ? 'Saving…'
-                  : editingPeriod
-                    ? 'Save period'
-                    : 'Add period'}
-              </Text>
-            </Button>
-            {editingPeriod ? (
-              <Button variant="ghost" disabled={savingPeriod} onPress={cancelEditPeriod}>
-                <Text>Cancel edit</Text>
-              </Button>
-            ) : null}
-          </View>
-
-          <Separator />
-
-          <View className="gap-2">
-            <Text className="text-sm font-medium">Payment instructions</Text>
-            {hasInstructions ? (
-              paymentInstructions.map(([label, value]) => (
-                <View key={label} className="flex-row justify-between gap-3">
-                  <Text variant="muted" className="text-xs">
-                    {label}
-                  </Text>
-                  <Text className="text-xs" numberOfLines={2}>
-                    {value}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text variant="muted" className="text-xs">
-                No payment instructions configured yet. Set them in your trainer profile.
-              </Text>
-            )}
-          </View>
-        </Section>
+        <ClientPaymentSection client={client} periods={periods} onChanged={() => loadAll(true)} />
 
         <Section title="Invoices" icon={ReceiptTextIcon} color={COLORS.amber}>
           {invoices.length === 0 ? (

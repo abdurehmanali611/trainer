@@ -38,6 +38,39 @@ export interface AccessState {
   invoice_id?: number;
 }
 
+/** What a client IS right now (derived from their periods + payment setup). */
+export type ClientStatusKind = 'paid' | 'trial' | 'discount' | 'illustration';
+
+export interface PaymentTimeline {
+  kind: string;
+  /** none | covered | upcoming | ask | grace | blocked */
+  phase: 'none' | 'covered' | 'upcoming' | 'ask' | 'grace' | 'blocked';
+  amount: number | null;
+  cycle_start: string | null;
+  cycle_end: string | null;
+  due_on: string | null;
+  ask_opens_on: string | null;
+  /** First day an unpaid client is blocked (deadline + grace days). */
+  blocked_from: string | null;
+  grace_ends_on: string | null;
+  next_due_on: string | null;
+  next_ask_opens_on: string | null;
+  days_left: number | null;
+  awaiting_approval: boolean;
+  needs_setup: boolean;
+  period_id: number | null;
+  instruction: {
+    id: number;
+    label: string;
+    channel: string;
+    cycle_label: string;
+    amount: string | null;
+    is_prepayment: boolean;
+    start_ask_days: number;
+    grace_days: number;
+  } | null;
+}
+
 export interface Client {
   id: number;
   name: string;
@@ -55,6 +88,11 @@ export interface Client {
   access_state: AccessState;
   goal_label: string;
   must_change_credential: boolean;
+  payment_instruction?: number | null;
+  payment_instruction_label?: string | null;
+  status_kind?: ClientStatusKind;
+  payment_timeline?: PaymentTimeline;
+  is_blocked?: boolean;
   otp?: string | null;
   /** Set on the client's first login — the UI then hides the OTP (features 4–5). */
   first_login_at?: string | null;
@@ -367,6 +405,7 @@ export interface DashboardData {
     payment_due: number;
     blocked: number;
     needs_period: number;
+    discount?: number;
     inactive: number;
   };
   revenue_this_month: number;

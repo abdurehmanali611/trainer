@@ -325,7 +325,16 @@ export default function ScheduleScreen() {
       if (existing) existing.push(session);
       else map.set(session.date, [session]);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    // Today first, then tomorrow, then later days; days already gone sink to
+    // the bottom (most recent of those first). Within a day: earliest time first.
+    const today = todayISO();
+    const rows = Array.from(map.entries()).map(
+      ([date, items]) =>
+        [date, [...items].sort((a, b) => a.time.localeCompare(b.time))] as [string, Session[]]
+    );
+    const upcoming = rows.filter(([date]) => date >= today).sort((a, b) => a[0].localeCompare(b[0]));
+    const past = rows.filter(([date]) => date < today).sort((a, b) => b[0].localeCompare(a[0]));
+    return [...upcoming, ...past];
   }, [sessions]);
 
   const pendingCount = reschedules.length + permissions.length;

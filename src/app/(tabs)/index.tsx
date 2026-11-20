@@ -1,6 +1,5 @@
 import { useRouter } from 'expo-router';
 import {
-  AlertTriangleIcon,
   BadgeDollarSignIcon,
   BanIcon,
   CalendarCheckIcon,
@@ -10,6 +9,7 @@ import {
   FlameIcon,
   HeartPulseIcon,
   HourglassIcon,
+  PercentIcon,
   ReceiptTextIcon,
   SparklesIcon,
   TrendingUpIcon,
@@ -151,7 +151,7 @@ export default function DashboardScreen() {
         { label: 'Illustrative', value: String(dashboard.counts.illustrative), icon: HeartPulseIcon, color: COLORS.pink, href: '/clients' },
         { label: 'Payment due', value: String(dashboard.counts.payment_due), icon: HourglassIcon, color: COLORS.amber, href: '/billing' },
         { label: 'Blocked', value: String(dashboard.counts.blocked), icon: BanIcon, color: COLORS.rose, href: '/clients' },
-        { label: 'Needs period', value: String(dashboard.counts.needs_period ?? 0), icon: AlertTriangleIcon, color: COLORS.orange },
+        { label: 'Discount', value: String(dashboard.counts.discount ?? 0), icon: PercentIcon, color: COLORS.orange, href: '/clients' },
         { label: 'Inactive', value: String(dashboard.counts.inactive), icon: UserMinusIcon, color: COLORS.muted },
         { label: 'Unpaid invoices', value: String(dashboard.unpaid_invoices), icon: ReceiptTextIcon, color: COLORS.amber, href: '/billing' },
         { label: 'Revenue this month', value: formatMoney(dashboard.revenue_this_month), icon: CoinsIcon, color: COLORS.lime, href: '/billing' },

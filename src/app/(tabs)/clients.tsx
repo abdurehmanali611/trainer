@@ -29,33 +29,45 @@ import { Combobox } from '@/components/ui/combobox';
 import { Text } from '@/components/ui/text';
 import { Textarea } from '@/components/ui/textarea';
 import { api } from '@/lib/api';
-import { initials, joinEmergencyContact, labelize, normalizeAccessState } from '@/lib/format';
+import { initials, joinEmergencyContact } from '@/lib/format';
 import type { Client, Paginated } from '@/lib/types';
 
+// The seven list filters. They overlap on purpose: a paid client is also active,
+// and a deactivated client still shows under All.
 const FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'paid', label: 'Paid' },
+  { key: 'active', label: 'Active' },
   { key: 'trial', label: 'Trial' },
-  { key: 'illustrative', label: 'Illustrative' },
+  { key: 'illustration', label: 'Illustration' },
+  { key: 'deactivated', label: 'Deactivated' },
   { key: 'blocked', label: 'Blocked' },
-  { key: 'inactive', label: 'Inactive' },
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]['key'];
 
-const MODE_COLOR: Record<string, string> = {
+const KIND_COLOR: Record<string, string> = {
   paid: COLORS.green,
   trial: COLORS.violet,
-  illustrative: COLORS.pink,
+  discount: COLORS.amber,
+  illustration: COLORS.pink,
+};
+
+const KIND_LABEL: Record<string, string> = {
+  paid: 'Paid',
+  trial: 'Trial',
+  discount: 'Discount',
+  illustration: 'Illustration',
 };
 
 const FILTER_COLOR: Record<FilterKey, string> = {
   all: COLORS.cyan,
   paid: COLORS.green,
+  active: COLORS.lime,
   trial: COLORS.violet,
-  illustrative: COLORS.pink,
+  illustration: COLORS.pink,
+  deactivated: COLORS.muted,
   blocked: COLORS.rose,
-  inactive: COLORS.muted,
 };
 
 function Field({
@@ -86,12 +98,9 @@ function Field({
 }
 
 function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () => void; onDelete: (client: Client) => void }) {
-  const state = normalizeAccessState(client.access_state).state;
-  // A freshly created client has no subscription period yet — that is an
-  // onboarding step, not a blocked account, so it gets a softer badge.
-  const blocked = state === 'blocked_unpaid' || state === 'blocked_trial_expired';
-  const needsPeriod = state === 'blocked_no_period';
-  const accent = blocked ? COLORS.rose : (MODE_COLOR[client.mode] ?? COLORS.green);
+  const kind = client.status_kind ?? (client.mode === 'illustrative' ? 'illustration' : 'paid');
+  const blocked = client.is_blocked === true;
+  const accent = blocked ? COLORS.rose : (KIND_COLOR[kind] ?? COLORS.green);
   return (
     <Panel
       onPress={onPress}
@@ -123,11 +132,10 @@ function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () 
           {client.phone || client.email}
         </Text>
         <View className="flex-row flex-wrap items-center gap-1.5">
-          <Chip label={labelize(client.mode)} color={MODE_COLOR[client.mode] ?? COLORS.green} />
+          <Chip label={KIND_LABEL[kind] ?? 'Paid'} color={KIND_COLOR[kind] ?? COLORS.green} />
           {/* Feature 18: deactivated clients stay listed, marked inactive. */}
           {!client.is_active ? <Chip label="Inactive" color={COLORS.muted} /> : null}
           {blocked ? <Chip label="Blocked" color={COLORS.rose} /> : null}
-          {needsPeriod ? <Chip label="No period yet" color={COLORS.amber} /> : null}
         </View>
       </View>
       {/* Feature 19: the trash icon removes the client completely —
@@ -197,6 +205,13 @@ function CreateClientDialog({
       Alert.alert('Invalid email', 'Enter a valid email address.');
       return;
     }
+    if (!illustration && !instructionId) {
+      Alert.alert(
+        'Payment instruction required',
+        'Choose a payment instruction, or turn on "Not payable" to make this an illustration client.'
+      );
+      return;
+    }
     setSaving(true);
     try {
       const created = await api<Client>('clients/', {
@@ -205,8 +220,8 @@ function CreateClientDialog({
           name: name.trim(),
           phone: phone.trim(),
           email: email.trim(),
-          payment_instruction:
-            illustration || !instructionId ? null : Number(instructionId),
+          illustration,
+          payment_instruction: illustration ? null : Number(instructionId),
           goals: goals
             .split(',')
             .map((g) => g.trim())
@@ -215,11 +230,6 @@ function CreateClientDialog({
           emergency_contact: joinEmergencyContact(emergencyName, emergencyPhone),
         },
       });
-      if (illustration) {
-        // The create API no longer accepts a mode field; illustrative clients
-        // get their mode right after creation.
-        await api(`clients/${created.id}/`, { method: 'PATCH', body: { mode: 'illustrative' } });
-      }
       Alert.alert(
         'Client created',
         created.otp
@@ -273,9 +283,9 @@ function CreateClientDialog({
             className={illustration ? 'border-primary/40 bg-primary/5' : undefined}>
             <View className="flex-row items-center justify-between gap-3">
               <View className="flex-1 gap-0.5">
-                <Text className="text-sm font-medium">Not payable</Text>
+                <Text className="text-sm font-medium">Not payable (illustration client)</Text>
                 <Text variant="muted" className="text-xs">
-                  On = this client is not payable (no payment instruction is shown to them).
+                  On = this client never pays and is never asked to. Off = pick how they pay below (required).
                 </Text>
               </View>
               <Switch checked={illustration} onCheckedChange={setIllustration} />
@@ -283,7 +293,7 @@ function CreateClientDialog({
             {!illustration ? (
               <View className="gap-1.5">
                 <Text variant="muted" className="text-xs font-medium">
-                  Payment instruction
+                  Payment instruction (required)
                 </Text>
                 <Combobox
                   value={instructionId}
@@ -292,7 +302,7 @@ function CreateClientDialog({
                     value: String(item.id),
                     label: item.label,
                   }))}
-                  placeholder="No payment instruction"
+                  placeholder="Pick a payment instruction"
                   searchPlaceholder="Search instructions…"
                   align="left"
                   emptyText="Create one in Billing → Payment instructions."
@@ -366,11 +376,6 @@ export default function ClientsScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const modeParam = filter === 'paid' || filter === 'trial' || filter === 'illustrative' ? filter : undefined;
-  const accessParam = filter === 'blocked' ? 'blocked' : undefined;
-  // Feature 18: the list includes deactivated clients (marked inactive);
-  // the filter narrows to inactive-only. Pickers elsewhere use ?status=active.
-  const statusParam = filter === 'inactive' ? 'inactive' : 'all';
 
   const load = React.useCallback(
     async (kind: 'initial' | 'refresh' | 'more') => {
@@ -384,9 +389,9 @@ export default function ClientsScreen() {
           query: {
             page,
             search: debouncedSearch || undefined,
-            mode: modeParam,
-            access: accessParam,
-            status: statusParam,
+            // The server applies the filter (it knows who is in a trial, on a
+            // discount, blocked, …); All also includes deactivated clients.
+            bucket: filter,
           },
         });
         if (seq !== seqRef.current) return;
@@ -406,7 +411,7 @@ export default function ClientsScreen() {
         }
       }
     },
-    [debouncedSearch, modeParam, accessParam, statusParam]
+    [debouncedSearch, filter]
   );
 
   React.useEffect(() => {
@@ -449,7 +454,17 @@ export default function ClientsScreen() {
           </View>
         </View>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      {/* Fixed height + no shrink so the row is never squashed, and it scrolls
+          sideways with a finger (native) or the wheel / trackpad (web). */}
+      <View style={{ height: 44, flexGrow: 0, flexShrink: 0, marginHorizontal: -20 }}>
+        <ScrollView
+          horizontal
+          nestedScrollEnabled
+          directionalLockEnabled
+          keyboardShouldPersistTaps="handled"
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0 }}
+          contentContainerStyle={{ gap: 8, paddingHorizontal: 20, alignItems: 'center' }}>
         {FILTERS.map((f) => {
           const active = f.key === filter;
           const color = FILTER_COLOR[f.key];
@@ -471,7 +486,8 @@ export default function ClientsScreen() {
             </Pressable>
           );
         })}
-      </ScrollView>
+        </ScrollView>
+      </View>
     </View>
   );
 
