@@ -91,6 +91,8 @@ export interface Client {
   payment_instruction?: number | null;
   payment_instruction_label?: string | null;
   status_kind?: ClientStatusKind;
+  /** false for a post-paid client who has not paid anything yet: shown as Active, not Paid. */
+  paid_confirmed?: boolean;
   payment_timeline?: PaymentTimeline;
   is_blocked?: boolean;
   otp?: string | null;

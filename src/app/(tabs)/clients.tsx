@@ -8,6 +8,7 @@ import { AppHeader } from '@/components/app-header';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { alpha, Chip, COLORS, Panel } from '@/components/kit';
 import { EmptyView, ErrorView } from '@/components/screen';
+import { OtpDialog } from '@/components/otp-dialog';
 import { PhoneNumberInput } from '@/components/phone-input';
 import { Button } from '@/components/ui/button';
 import {
@@ -132,7 +133,11 @@ function ClientRow({ client, onPress, onDelete }: { client: Client; onPress: () 
           {client.phone || client.email}
         </Text>
         <View className="flex-row flex-wrap items-center gap-1.5">
-          <Chip label={KIND_LABEL[kind] ?? 'Paid'} color={KIND_COLOR[kind] ?? COLORS.green} />
+          {kind === 'paid' && client.paid_confirmed === false ? (
+            <Chip label="Active" color={COLORS.sky} />
+          ) : (
+            <Chip label={KIND_LABEL[kind] ?? 'Paid'} color={KIND_COLOR[kind] ?? COLORS.green} />
+          )}
           {/* Feature 18: deactivated clients stay listed, marked inactive. */}
           {!client.is_active ? <Chip label="Inactive" color={COLORS.muted} /> : null}
           {blocked ? <Chip label="Blocked" color={COLORS.rose} /> : null}
@@ -155,10 +160,12 @@ function CreateClientDialog({
   open,
   onOpenChange,
   onCreated,
+  onOtp,
 }: {
   open: boolean;
   onOpenChange: (value: boolean) => void;
   onCreated: () => void;
+  onOtp: (value: { otp: string; name: string }) => void;
 }) {
   const [name, setName] = React.useState('');
   const [phone, setPhone] = React.useState('');
@@ -230,12 +237,11 @@ function CreateClientDialog({
           emergency_contact: joinEmergencyContact(emergencyName, emergencyPhone),
         },
       });
-      Alert.alert(
-        'Client created',
-        created.otp
-          ? `Share this OTP with ${created.name} so they can log in: ${created.otp}`
-          : 'Client added to your list.'
-      );
+      if (created.otp) {
+        onOtp({ otp: created.otp, name: created.name });
+      } else {
+        Alert.alert('Client created', 'Client added to your list.');
+      }
       reset();
       onOpenChange(false);
       onCreated();
@@ -368,6 +374,7 @@ export default function ClientsScreen() {
   const [error, setError] = React.useState<string | null>(null);
   const [hasMore, setHasMore] = React.useState(false);
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [newOtp, setNewOtp] = React.useState<{ otp: string; name: string } | null>(null);
   const pageRef = React.useRef(1);
   const seqRef = React.useRef(0);
 
@@ -575,7 +582,13 @@ export default function ClientsScreen() {
       <View className="absolute bottom-6 right-4">
         {count != null ? <Chip label={`${count} total`} color={COLORS.cyan} /> : null}
       </View>
-      <CreateClientDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={() => load('refresh')} />
+      <CreateClientDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={() => load('refresh')}
+        onOtp={setNewOtp}
+      />
+      <OtpDialog otp={newOtp?.otp ?? null} clientName={newOtp?.name ?? ''} onClose={() => setNewOtp(null)} />
     </View>
   );
 }

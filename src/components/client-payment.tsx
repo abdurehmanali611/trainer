@@ -2,6 +2,7 @@ import {
   BadgeDollarSignIcon,
   CalendarClockIcon,
   CircleCheckIcon,
+  CircleIcon,
   CreditCardIcon,
   GiftIcon,
   HourglassIcon,
@@ -20,7 +21,6 @@ import { alpha, Chip, COLORS, IconBubble, Panel, Segmented } from '@/components/
 import { Section } from '@/components/section';
 import { Button } from '@/components/ui/button';
 import { DatePopoverField } from '@/components/ui/calendar';
-import { Combobox } from '@/components/ui/combobox';
 import {
   Dialog,
   DialogBody,
@@ -539,16 +539,36 @@ export function ClientPaymentSection({
                   <Text variant="muted" className="text-xs font-medium">
                     Payment instruction
                   </Text>
-                  <Combobox
-                    value={instructionId}
-                    onValueChange={setInstructionId}
-                    options={instructions.map((item) => ({ value: String(item.id), label: item.label }))}
-                    placeholder="Pick a payment instruction"
-                    searchPlaceholder="Search instructions…"
-                    align="left"
-                    emptyText="No payment instructions yet — create one in Billing."
-                    className="w-full"
-                  />
+                  {instructions.length === 0 ? (
+                    <Text variant="muted" className="text-xs">
+                      No payment instructions yet — create one in Billing.
+                    </Text>
+                  ) : (
+                    <View className="gap-2">
+                      {instructions.map((item) => {
+                        const selected = instructionId === String(item.id);
+                        return (
+                          <Pressable
+                            key={item.id}
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected }}
+                            onPress={() => setInstructionId(String(item.id))}
+                            className="flex-row items-center gap-3 rounded-xl border p-3"
+                            style={{
+                              borderColor: selected ? COLORS.green : alpha(COLORS.muted, 0.3),
+                              backgroundColor: selected ? alpha(COLORS.green, 0.12) : 'transparent',
+                            }}>
+                            <Icon
+                              as={selected ? CircleCheckIcon : CircleIcon}
+                              size={18}
+                              color={selected ? COLORS.green : COLORS.muted}
+                            />
+                            <Text className="flex-1 text-sm font-medium">{item.label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
               ) : null}
             </DialogSection>

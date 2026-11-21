@@ -29,6 +29,14 @@
   .t{font-weight:600}
   .d{color:var(--muted);font-size:13px}
   input:checked+div .t{color:var(--ok)}
+  .fb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
+  .fb h2{margin:0 0 4px;font-size:15px}
+  .fb p{margin:0 0 10px;color:var(--muted);font-size:13px}
+  .fb select,.fb textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px}
+  .fb textarea{min-height:80px;margin:8px 0;resize:vertical}
+  .fb .row{display:flex;gap:8px;flex-wrap:wrap}
+  .fbitem{border-top:1px solid var(--line);padding:8px 0;display:flex;gap:8px;justify-content:space-between;align-items:flex-start}
+  .fbitem small{color:var(--muted)}
   .hide{display:none}
 </style>
 </head>
@@ -40,7 +48,16 @@
     <span><button id="reset">Reset</button></span></div>
   
 </div></header>
-<main><div class="wrap" id="root"></div></main>
+<main><div class="wrap">
+  <div class="fb">
+    <h2>Feedback</h2>
+    <p>Write anything that is wrong or missing. Press <b>Download feedback.md</b> and save it into the <code>trainer/docs</code> folder, then tell Claude to read it and fix the items.</p>
+    <select id="fbArea"></select>
+    <textarea id="fbText" placeholder="What did you see? What should happen instead?"></textarea>
+    <div class="row"><button class="on" id="fbAdd">Add feedback</button><button id="fbCopy">Copy all</button><button id="fbDl">Download feedback.md</button></div>
+    <div id="fbList"></div>
+  </div>
+  <div id="root"></div></div></main>
 <script>
 const DATA = [
  {app:'Trainer', area:'Account', items:[
@@ -169,6 +186,21 @@ function render(){
 }
 document.getElementById('reset').onclick=()=>{if(confirm('Clear all ticks?')){state={};save();render()}};
 render();
+const FBKEY='feature-feedback-v1';
+let fb=[];try{fb=JSON.parse(localStorage.getItem(FBKEY)||'[]')}catch(e){}
+const fbSave=()=>{try{localStorage.setItem(FBKEY,JSON.stringify(fb))}catch(e){}};
+const areaSel=document.getElementById('fbArea');
+areaSel.innerHTML='<option value="General">General</option>'+DATA.map(g=>{const n=g.app+' · '+g.area.replace(/&amp;/g,'&');return '<option>'+n+'</option>'}).join('');
+const esc=t=>t.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function fbRender(){
+  document.getElementById('fbList').innerHTML=fb.map((f,i)=>`<div class="fbitem"><div><small>${esc(f.area)} · ${esc(f.date)}</small><div>${esc(f.text).replace(/\n/g,'<br>')}</div></div><button data-i="${i}">Delete</button></div>`).join('');
+  document.querySelectorAll('#fbList button').forEach(b=>b.onclick=()=>{fb.splice(+b.dataset.i,1);fbSave();fbRender()});
+}
+const fbText=()=>'# Feedback'+"\n\n"+fb.map((f,i)=>`${i+1}. [${f.area}] ${f.text}`).join("\n")+"\n";
+document.getElementById('fbAdd').onclick=()=>{const t=document.getElementById('fbText');if(!t.value.trim())return;fb.push({area:areaSel.value,text:t.value.trim(),date:new Date().toLocaleString()});t.value='';fbSave();fbRender()};
+document.getElementById('fbCopy').onclick=()=>{try{navigator.clipboard.writeText(fbText())}catch(e){}};
+document.getElementById('fbDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([fbText()],{type:'text/markdown'}));a.download='feedback.md';a.click()};
+fbRender();
 </script>
 </body>
 </html>

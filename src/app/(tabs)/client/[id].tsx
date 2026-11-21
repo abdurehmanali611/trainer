@@ -29,6 +29,7 @@ import {
   toneForInvoice,
 } from '@/components/screen';
 import { Section } from '@/components/section';
+import { OtpDialog } from '@/components/otp-dialog';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
@@ -283,6 +284,7 @@ export default function ClientDetailScreen() {
   const [uploading, setUploading] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [resettingOtp, setResettingOtp] = React.useState(false);
+  const [otpShown, setOtpShown] = React.useState<string | null>(null);
 
   const loadAll = React.useCallback(
     async (silent?: boolean) => {
@@ -585,10 +587,7 @@ export default function ClientDetailScreen() {
                             method: 'POST',
                           });
                           setClient((c) => (c ? { ...c, otp: res.otp, first_login_at: null } : c));
-                          Alert.alert(
-                            'New OTP',
-                            `Share this OTP with ${client.name}: ${res.otp}`
-                          );
+                          setOtpShown(res.otp);
                         } catch (e) {
                           Alert.alert(
                             'Reset failed',
@@ -605,7 +604,7 @@ export default function ClientDetailScreen() {
               <Text className="text-sm">Reset login OTP</Text>
             </Button>
           ) : client.otp ? (
-            <Text variant="muted" className="text-xs">
+            <Text variant="muted" selectable className="text-xs">
               Login OTP: {client.otp}
             </Text>
           ) : null}
@@ -777,6 +776,12 @@ export default function ClientDetailScreen() {
           </Text>
         </Section>
       </View>
+      <OtpDialog
+        otp={otpShown}
+        title="New OTP"
+        clientName={client.name}
+        onClose={() => setOtpShown(null)}
+      />
     </Screen>
   );
 }
