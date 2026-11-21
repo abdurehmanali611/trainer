@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Feature Test Checklist</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--ink:#14161f;--muted:#697086;--line:#e3e6ef;--accent:#4f46e5;--ok:#16a34a;--track:#e3e6ef}
+  @media (prefers-color-scheme:dark){:root{--bg:#0e1017;--card:#171a24;--ink:#eceef6;--muted:#9aa1b8;--line:#272b3a;--accent:#8b85ff;--ok:#34d399;--track:#272b3a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);padding:14px 16px}
+  .wrap{max-width:900px;margin:0 auto}
+  h1{margin:0 0 8px;font-size:20px}
+  .bar{height:14px;background:var(--track);border-radius:99px;overflow:hidden}
+  .fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--ok));transition:width .3s}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;color:var(--muted);font-size:13px;gap:8px;flex-wrap:wrap}
+  .pct{font-weight:700;color:var(--ink);font-size:16px}
+  .tabs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:5px 12px;border-radius:99px;cursor:pointer}
+  button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  main{padding:16px}
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;margin:0 0 14px;overflow:hidden}
+  section h2{margin:0;padding:12px 14px;font-size:15px;display:flex;justify-content:space-between;border-bottom:1px solid var(--line)}
+  section h2 small{color:var(--muted);font-weight:500}
+  label{display:flex;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line);cursor:pointer;align-items:flex-start}
+  label:last-child{border-bottom:0}
+  input[type=checkbox]{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:none}
+  .t{font-weight:600}
+  .d{color:var(--muted);font-size:13px}
+  input:checked+div .t{color:var(--ok)}
+  .hide{display:none}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <h1>Feature test checklist — trainer &amp; trainer-client</h1>
+  <div class="bar"><div class="fill" id="fill"></div></div>
+  <div class="meta"><span><span class="pct" id="pct">0%</span> &nbsp;<span id="count">0 of 0</span> verified</span>
+    <span><button id="reset">Reset</button></span></div>
+  
+</div></header>
+<main><div class="wrap" id="root"></div></main>
+<script>
+const DATA = [
+ {app:'Trainer', area:'Account', items:[
+  ['Register &amp; login','Create a trainer account, log in, log out; wrong password shows a clear error.'],
+  ['Profile photo in header','Upload a photo in Profile; it appears in the app header on every tab.'],
+  ['Profile edit','Change name/phone/details; values persist after restart.'],
+ ]},
+ {app:'Trainer', area:'Dashboard', items:[
+  ['Counts by status','Paid / Active / Trial / Discount / Illustration tiles match the Clients list.'],
+  ['Bell notifications','Bell shows unread badge; mark one read; mark all read. No separate Notifications screen.'],
+ ]},
+ {app:'Trainer', area:'Clients', items:[
+  ['7 scrollable filters','All, Paid, Active, Trial, Illustration, Deactivated, Blocked scroll horizontally under the search box.'],
+  ['Filter rules','Paid = not trial/discount/illustration. Deactivated appears only under All and Deactivated. A client can show in several filters.'],
+  ['Search','Searching by name narrows the list inside the active filter.'],
+  ['Create client','Requires a payment instruction OR the illustration switch; new client starts as Paid; OTP is shown.'],
+  ['Status badges','Badge reads Paid / Trial / Discount / Illustration correctly for each client.'],
+  ['Deactivate / reactivate','Danger zone toggle; deactivated client cannot log in; reactivate restores same OTP.'],
+  ['Delete client','Trash icon in the list permanently removes the client after confirmation.'],
+ ]},
+ {app:'Trainer', area:'Client detail – payment', items:[
+  ['Free trial','Assign a trial: badge becomes Trial, instruction timeline is replaced by "client is in free trial" with the trial period card.'],
+  ['Discount','Assign a discount with a reduced amount: badge Discount, shows "client is in discount" and the period card.'],
+  ['Edit / delete trial or discount','Edit dates/amount; delete returns the instruction timeline.'],
+  ['Instruction timeline','After a trial/discount ends or is deleted the timeline reappears with an Edit payment setup dialog (illustration switch or instruction picker); no delete.'],
+  ['Payment panel dates','Shows "asked from", deadline (0 days left) and "blocked from" dates.'],
+ ]},
+ {app:'Both apps', area:'Payment rules (trainer + trainer-client)', items:[
+  ['Prepaid new client','First cycle counts as paid: not asked, not blocked.'],
+  ['Prepaid ask window','Request opens start_ask_days before the cycle ends; client blocked from deadline + grace days (grace 0 = on deadline day).'],
+  ['Post-paid ask window','Asked at the end of each cycle under the same ask/grace rules.'],
+  ['Prepaid, starts with free trial','Asked near the end of the trial, then the ask/grace rules apply.'],
+  ['Prepaid discount','Counts as already paid; next full-price cycle is asked near the end of the discount.'],
+  ['Post-paid discount','Discounted price asked once near its end.'],
+  ['Restart after trial/discount','After any trial or discount ends (even short) cycles restart from the next day.'],
+  ['Other cycle lengths','Rules hold for monthly, quarterly, half-yearly, yearly and custom cycles.'],
+  ['Deactivated / illustration','Illustration clients are never asked or blocked.'],
+  ['Apex warnings','Trainer sees apex notice 10 days before free trial ends and 7 days before the quarterly payment.'],
+  ['Backend tests','Run both backends\' test suites; all pass (74 tests).'],
+ ]},
+ {app:'Trainer', area:'Training content', items:[
+  ['Schedule order','Today first, then tomorrow and later; past sessions at the bottom; new schedule appears in correct slot.'],
+  ['Plans &amp; plan detail','Create/edit plans, add days and exercises; only one back button on plan detail.'],
+  ['Exercises library','Browse, create and edit exercises.'],
+  ['Remarks','Add a remark on a client or session; it reaches the client.'],
+ ]},
+ {app:'Trainer', area:'Messaging', items:[
+  ['Client chat','Send text, image and voice; composer has normal bottom spacing.'],
+  ['Broadcast','Send a message to several clients; each receives it.'],
+  ['Support chat','Image picker, text input and send button look right and work.'],
+ ]},
+ {app:'Trainer', area:'Billing &amp; More', items:[
+  ['Payment instructions','Create/edit instructions: cycle, prepaid/post-paid, ask days, grace days, amount.'],
+  ['Billing &amp; platform notices','Invoices list; approve a client payment; notice messages include dates.'],
+  ['No error screen','Navigate every tab in the emulator; no "something went wrong" screen.'],
+ ]},
+ {app:'Trainer-client', area:'Access', items:[
+  ['Login with OTP','Log in with the OTP the trainer created; wrong OTP shows invalid credential.'],
+  ['Change credential','First login forces a new credential; button works once and lands on Home.'],
+  ['Forgot / reset password','Reset flow completes and the new credential logs in.'],
+  ['Deactivated client','A deactivated client cannot log in; reactivation restores the same OTP.'],
+  ['Session persistence','Close and reopen the app: still signed in; log out returns to login.'],
+ ]},
+ {app:'Trainer-client', area:'Payments &amp; lock', items:[
+  ['Ask phase','Within the ask window, billing shows the amount and a "Pay by" date.'],
+  ['Grace phase','After the deadline the app stays usable until grace ends.'],
+  ['Blocked phase','After grace the app locks to the payment portal; no tab is reachable.'],
+  ['Submit payment','Send a transaction ID; it keeps exactly what was typed (no forced capitals); status becomes awaiting approval.'],
+  ['Approval unlocks','Trainer approves the payment; the client is unblocked without reinstalling.'],
+  ['Discount price','During a discount the portal asks the reduced amount.'],
+  ['Free trial','No payment asked during a trial (except the prepaid end-of-trial ask).'],
+  ['Billing screen','More › Billing lists invoices and payment history with correct statuses.'],
+  ['Lock screen','Lock screen shows reason and payment details of the trainer.'],
+ ]},
+ {app:'Trainer-client', area:'Home &amp; Train', items:[
+  ['Home tab','Greeting, the day&#39;s workout and summary cards load.'],
+  ['Train tab','Sessions and workouts panels list assigned items.'],
+  ['Workout detail','Open a workout, view exercises, log sets and complete it.'],
+  ['Schedule tab','Sessions are ordered with today first, then upcoming, past at the bottom.'],
+  ['Plans tab','Assigned plans and their days display.'],
+  ['Reschedule request','Send a reschedule request; the trainer receives it.'],
+  ['Permission note','Send a late/absent note; the trainer receives it.'],
+ ]},
+ {app:'Trainer-client', area:'Progress &amp; tracking', items:[
+  ['Progress tab','Charts and summaries display.'],
+  ['Records','Personal records list and update after workouts.'],
+  ['Achievements','Badges display earned/unearned correctly.'],
+  ['Diary','Add, view, edit and delete a diary entry.'],
+  ['Water','Log water intake; daily total updates.'],
+  ['Measurements','Add and view body measurements over time.'],
+  ['Photos','Add progress photos; view and delete them.'],
+ ]},
+ {app:'Trainer-client', area:'Communication &amp; account', items:[
+  ['Chat','Text, image and voice messages sync with the trainer; composer spacing is normal.'],
+  ['Notifications','Notifications list loads; mark read works.'],
+  ['Feedback','Feedback can be sent from More.'],
+  ['Profile','Edit profile and photo; changes persist.'],
+  ['More menu','Every item in Account and Log &amp; track opens its screen with no error.'],
+  ['No error screen','Walk through every tab in the emulator; no "something went wrong" screen.'],
+ ]},
+];
+const KEY='feature-checklist-v1';
+let state={};
+try{state=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){}};
+const root=document.getElementById('root');
+let filter='All';
+function render(){
+  root.innerHTML='';
+  
+  let total=0,done=0;
+  DATA.forEach((g,gi)=>{
+    const sec=document.createElement('section');
+    if(filter!=='All'&&(g.app!==filter&&g.app!=='Both apps'))sec.classList.add('hide');
+    let gd=0;
+    const body=g.items.map((it,ii)=>{const id=gi+'-'+ii;const c=!!state[id];gd+=c;return `<label><input type="checkbox" data-id="${id}" ${c?'checked':''}><div><div class="t">${it[0]}</div><div class="d">${it[1]}</div></div></label>`}).join('');
+    sec.innerHTML=`<h2><span>${g.app} · ${g.area}</span><small>${gd}/${g.items.length}</small></h2>${body}`;
+    root.appendChild(sec);
+  });
+  DATA.forEach((g,gi)=>{if(filter!=='All'&&(g.app!==filter&&g.app!=='Both apps'))return;g.items.forEach((_,ii)=>{total++;if(state[gi+'-'+ii])done++})});
+  const p=total?Math.round(done/total*100):0;
+  document.getElementById('fill').style.width=p+'%';
+  document.getElementById('pct').textContent=p+'%';
+  document.getElementById('count').textContent=done+' of '+total;
+  root.querySelectorAll('input').forEach(i=>i.onchange=()=>{state[i.dataset.id]=i.checked;save();render()});
+}
+document.getElementById('reset').onclick=()=>{if(confirm('Clear all ticks?')){state={};save();render()}};
+render();
+</script>
+</body>
+</html>

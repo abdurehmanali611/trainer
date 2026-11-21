@@ -14,13 +14,17 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://trainer-backend-nu.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://trainer-backend-nu.vercel.app",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "vsn5lj8p",
+        "EXPO_PUBLIC_CLOUDINARY_PRESET_NAME": "trainer"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://trainer-backend-nu.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://trainer-backend-nu.vercel.app",
+        "EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME": "vsn5lj8p",
+        "EXPO_PUBLIC_CLOUDINARY_PRESET_NAME": "trainer"
       }
     }
   },
